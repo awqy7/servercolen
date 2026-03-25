@@ -1,5 +1,6 @@
-import { getClientes, addCliente, deleteCliente } from './actions';
+import { getClientes, deleteCliente } from './actions';
 import { Trash2, UserPlus, Car } from 'lucide-react';
+import ClienteForm from './ClienteForm';
 
 export default async function ClientesPage() {
   const clientes = await getClientes();
@@ -11,35 +12,7 @@ export default async function ClientesPage() {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '32px', alignItems: 'start' }}>
-        <div className="card">
-          <h2 style={{ fontSize: '1.2rem', marginBottom: '20px' }}>Cadastrar Novo Cliente</h2>
-          <form action={addCliente} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div className="input-group">
-              <label>Nome Completo do Cliente</label>
-              <input type="text" name="nome" className="input" placeholder="Ex: João Silva" required />
-            </div>
-            <div className="input-group">
-              <label>Telefone / WhatsApp</label>
-              <input type="text" name="telefone" className="input" placeholder="Ex: (11) 99999-9999" />
-            </div>
-            
-            <hr style={{ margin: '10px 0', borderColor: 'var(--border)' }} />
-            <h3 style={{ fontSize: '0.95rem', color: 'var(--text-muted)' }}>Dados do Veículo</h3>
-
-            <div className="input-group">
-              <label>Placa do Veículo</label>
-              <input type="text" name="placa" className="input" placeholder="AAA-1234" />
-            </div>
-            <div className="input-group">
-              <label>Marca / Modelo</label>
-              <input type="text" name="modelo" className="input" placeholder="VW Gol 1.0 2012" />
-            </div>
-            
-            <button type="submit" className="btn btn-primary" style={{ marginTop: '8px' }}>
-              <UserPlus size={18} /> Salvar Cliente
-            </button>
-          </form>
-        </div>
+        <ClienteForm />
 
         <div className="card">
           <h2 style={{ fontSize: '1.2rem', marginBottom: '20px' }}>Clientes Cadastrados ({clientes.length})</h2>

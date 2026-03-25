@@ -14,19 +14,32 @@ export async function getCaixaTransacoes() {
 }
 
 export async function addTransacao(formData: FormData) {
-  const tipo = formData.get('tipo') as string;
-  const valor = parseFloat(formData.get('valor') as string);
-  const descricao = formData.get('descricao') as string;
+  try {
+    const tipo = formData.get('tipo') as string;
+    const valor = parseFloat(formData.get('valor') as string);
+    const descricao = formData.get('descricao') as string;
 
-  if (!tipo || isNaN(valor) || !descricao) return;
+    if (!tipo || isNaN(valor) || !descricao) {
+      return { success: false, error: 'Dados inválidos. Preencha todos os campos.' };
+    }
 
-  const supabase = await createClient();
-  await supabase
-    .from('Caixa')
-    .insert([{ tipo, valor, descricao }]);
+    const supabase = await createClient();
+    const { error } = await supabase
+      .from('Caixa')
+      .insert([{ tipo, valor, descricao }]);
 
-  revalidatePath('/caixa');
-  revalidatePath('/'); // update dashboard
+    if (error) {
+      console.error('Erro ao adicionar transação:', error);
+      return { success: false, error: error.message };
+    }
+
+    revalidatePath('/caixa');
+    revalidatePath('/'); // update dashboard
+    return { success: true };
+  } catch (error: any) {
+    console.error('Exception in addTransacao:', error);
+    return { success: false, error: 'Erro interno ao processar a solicitação.' };
+  }
 }
 
 export async function deleteTransacao(id: number) {

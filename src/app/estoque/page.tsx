@@ -1,5 +1,6 @@
-import { getEstoque, addPeca, deletePeca, addQuantidade } from './actions';
+import { getEstoque, deletePeca, addQuantidade } from './actions';
 import { Trash2, Plus, ArrowUp } from 'lucide-react';
+import EstoqueForm from './EstoqueForm';
 
 export default async function EstoquePage() {
   const pecas = await getEstoque();
@@ -33,30 +34,7 @@ export default async function EstoquePage() {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '32px', alignItems: 'start' }}>
-        <div className="card">
-          <h2 style={{ fontSize: '1.2rem', marginBottom: '20px' }}>Cadastrar Nova Peça</h2>
-          <form action={addPeca} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div className="input-group">
-              <label>Nome / Descrição do Produto</label>
-              <input type="text" name="nome" className="input" placeholder="Ex: Filtro de Óleo" required />
-            </div>
-            <div className="input-group">
-              <label>Quantidade Inicial</label>
-              <input type="number" name="quantidade" className="input" defaultValue="1" min="0" required />
-            </div>
-            <div className="input-group">
-              <label>Valor de Custo (R$)</label>
-              <input type="number" step="0.01" name="valor_custo" className="input" placeholder="0.00" required />
-            </div>
-            <div className="input-group">
-              <label>Valor de Venda (R$)</label>
-              <input type="number" step="0.01" name="valor_venda" className="input" placeholder="0.00" required />
-            </div>
-            <button type="submit" className="btn btn-primary" style={{ marginTop: '8px' }}>
-              <Plus size={18} /> Adicionar Produto
-            </button>
-          </form>
-        </div>
+        <EstoqueForm />
 
         <div className="card">
           <h2 style={{ fontSize: '1.2rem', marginBottom: '20px' }}>Peças Cadastradas</h2>

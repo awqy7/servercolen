@@ -102,25 +102,30 @@ export async function createOrdem(data: {
     }));
 
   if (itemsToInsert.length > 0) {
-    await supabase.from('OS_Itens').insert(itemsToInsert);
+    const { error: itemsError } = await supabase.from('OS_Itens').insert(itemsToInsert);
+    if (itemsError) throw itemsError;
     
     // Atualizar estoque (um por um pois Supabase não tem decrement/increment em massa fácil sem RPC)
     for (const p of data.pecas) {
       if (p.quantidade <= 0) continue;
       
       // Get current quantity
-      const { data: currentStock } = await supabase
+      const { data: currentStock, error: stockError } = await supabase
         .from('Estoque')
         .select('quantidade')
         .eq('id', p.id)
         .single();
         
+      if (stockError) throw stockError;
+        
       const newQty = Math.max(0, (currentStock?.quantidade || 0) - p.quantidade);
       
-      await supabase
+      const { error: updateError } = await supabase
         .from('Estoque')
         .update({ quantidade: newQty })
         .eq('id', p.id);
+
+      if (updateError) throw updateError;
     }
   }
 
@@ -134,17 +139,19 @@ export async function createOrdem(data: {
     }));
 
   if (servicosToInsert.length > 0) {
-    await supabase.from('OS_MaoDeObra').insert(servicosToInsert);
+    const { error: svcError } = await supabase.from('OS_MaoDeObra').insert(servicosToInsert);
+    if (svcError) throw svcError;
   }
 
   // 4. Lançar no Caixa
   if (data.lancarCaixa) {
-    await supabase.from('Caixa').insert([{
+    const { error: caixaError } = await supabase.from('Caixa').insert([{
       tipo: 'Entrada',
       valor: valor_final,
       descricao: `Recebimento Ref. OS #${osId}`,
       os_id: osId
     }]);
+    if (caixaError) throw caixaError;
   }
 
   revalidatePath('/ordens-servico');
@@ -185,19 +192,22 @@ export async function concluirOrdem(id: number) {
     .maybeSingle();
   
   if (!exists) {
-    await supabase.from('Caixa').insert([{
+    const { error: caixaError } = await supabase.from('Caixa').insert([{
       tipo: 'Entrada',
       valor: os.valor_final,
       descricao: `Recebimento Ref. OS #${id}`,
       os_id: id
     }]);
+    if (caixaError) throw caixaError;
   }
 
   // 3. Update status
-  await supabase
+  const { error: statusError } = await supabase
     .from('OrdensServico')
     .update({ status: 'Concluído' })
     .eq('id', id);
+  
+  if (statusError) throw statusError;
   
   revalidatePath('/ordens-servico');
   revalidatePath('/ordens-servico/nova');
@@ -248,10 +258,14 @@ export async function updateOrdem(id: number, data: {
   if (data.pecas.length > 0) {
     for (const p of data.pecas) {
       if (p.quantidade <= 0) continue;
-      await supabase.from('OS_Itens').insert([{ os_id: id, estoque_id: p.id, quantidade: p.quantidade, valor_unitario: p.valor_venda }]);
+      const { error: itemError } = await supabase.from('OS_Itens').insert([{ os_id: id, estoque_id: p.id, quantidade: p.quantidade, valor_unitario: p.valor_venda }]);
+      if (itemError) throw itemError;
       
-      const { data: stock } = await supabase.from('Estoque').select('quantidade').eq('id', p.id).single();
-      await supabase.from('Estoque').update({ quantidade: Math.max(0, (stock?.quantidade || 0) - p.quantidade) }).eq('id', p.id);
+      const { data: stock, error: stockError } = await supabase.from('Estoque').select('quantidade').eq('id', p.id).single();
+      if (stockError) throw stockError;
+      
+      const { error: updateError } = await supabase.from('Estoque').update({ quantidade: Math.max(0, (stock?.quantidade || 0) - p.quantidade) }).eq('id', p.id);
+      if (updateError) throw updateError;
     }
   }
 
@@ -260,7 +274,8 @@ export async function updateOrdem(id: number, data: {
       .filter(s => s.descricao && s.valor > 0)
       .map(s => ({ os_id: id, descricao: s.descricao, valor: s.valor }));
     if (servicosToInsert.length > 0) {
-      await supabase.from('OS_MaoDeObra').insert(servicosToInsert);
+      const { error: svcError } = await supabase.from('OS_MaoDeObra').insert(servicosToInsert);
+      if (svcError) throw svcError;
     }
   }
 

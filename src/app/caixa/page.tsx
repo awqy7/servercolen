@@ -1,6 +1,7 @@
-import { getCaixaTransacoes, addTransacao, deleteTransacao } from './actions';
+import { getCaixaTransacoes, deleteTransacao } from './actions';
 import { getDashboardStats } from '../actions';
 import { ArrowDownCircle, ArrowUpCircle, Trash2 } from 'lucide-react';
+import CaixaForm from './CaixaForm';
 
 export default async function CaixaPage() {
   const transacoes = await getCaixaTransacoes();
@@ -23,25 +24,7 @@ export default async function CaixaPage() {
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '32px', alignItems: 'start' }}>
         <div className="card">
-          <h2 style={{ fontSize: '1.2rem', marginBottom: '20px' }}>Nova Transação</h2>
-          <form action={addTransacao} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div className="input-group">
-              <label>Tipo</label>
-              <select name="tipo" className="select" required>
-                <option value="Entrada">Entrada (+)</option>
-                <option value="Saída">Saída (-)</option>
-              </select>
-            </div>
-            <div className="input-group">
-              <label>Valor (R$)</label>
-              <input type="number" step="0.01" min="0.01" name="valor" className="input" placeholder="0.00" required />
-            </div>
-            <div className="input-group">
-              <label>Descrição</label>
-              <input type="text" name="descricao" className="input" placeholder="Ex: Pagamento de Luz" required />
-            </div>
-            <button type="submit" className="btn btn-primary" style={{ marginTop: '8px' }}>Registrar Transação</button>
-          </form>
+        <CaixaForm />
         </div>
 
         <div className="card">

@@ -13,21 +13,34 @@ export async function getEstoque() {
 }
 
 export async function addPeca(formData: FormData) {
-  const nome = formData.get('nome') as string;
-  const quantidade = parseInt(formData.get('quantidade') as string);
-  const valor_custo = parseFloat(formData.get('valor_custo') as string);
-  const valor_venda = parseFloat(formData.get('valor_venda') as string);
+  try {
+    const nome = formData.get('nome') as string;
+    const quantidade = parseInt(formData.get('quantidade') as string);
+    const valor_custo = parseFloat(formData.get('valor_custo') as string);
+    const valor_venda = parseFloat(formData.get('valor_venda') as string);
 
-  if (!nome || isNaN(quantidade) || isNaN(valor_custo) || isNaN(valor_venda)) return;
+    if (!nome || isNaN(quantidade) || isNaN(valor_custo) || isNaN(valor_venda)) {
+      return { success: false, error: 'Dados inválidos. Verifique os campos.' };
+    }
 
-  const supabase = await createClient();
-  await supabase
-    .from('Estoque')
-    .insert([{ nome, quantidade, valor_custo, valor_venda }]);
+    const supabase = await createClient();
+    const { error } = await supabase
+      .from('Estoque')
+      .insert([{ nome, quantidade, valor_custo, valor_venda }]);
 
-  revalidatePath('/estoque');
-  revalidatePath('/ordens-servico/nova');
-  revalidatePath('/'); // update dashboard alerts
+    if (error) {
+      console.error('Erro ao adicionar peça:', error);
+      return { success: false, error: error.message };
+    }
+
+    revalidatePath('/estoque');
+    revalidatePath('/ordens-servico/nova');
+    revalidatePath('/'); // update dashboard alerts
+    return { success: true };
+  } catch (error: any) {
+    console.error('Exception in addPeca:', error);
+    return { success: false, error: 'Erro interno ao processar a solicitação.' };
+  }
 }
 
 export async function deletePeca(id: number) {
