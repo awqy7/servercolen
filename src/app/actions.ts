@@ -8,7 +8,7 @@ export async function getDashboardStats() {
   
   // 1. OS em Andamento
   const { count: osAtivas } = await supabase
-    .from('OrdensServico')
+    .from('ordens_servico')
     .select('*', { count: 'exact', head: true })
     .eq('status', 'Em Andamento');
 
@@ -18,22 +18,22 @@ export async function getDashboardStats() {
   firstDayOfMonth.setHours(0, 0, 0, 0);
 
   const { data: ordensConcluidas } = await supabase
-    .from('OrdensServico')
+    .from('ordens_servico')
     .select('valor_final')
     .eq('status', 'Concluído')
-    .gte('data_entrada', firstDayOfMonth.toISOString());
+    .gte('created_at', firstDayOfMonth.toISOString());
 
   const faturamento = ordensConcluidas?.reduce((acc, os) => acc + (os.valor_final || 0), 0) || 0;
   
   // 3. Alertas de estoque
   const { data: alertasEstoque } = await supabase
-    .from('Estoque')
+    .from('estoque')
     .select('*')
     .lt('quantidade', 5);
 
   // 4. Saldo em Caixa
   const { data: caixaItems } = await supabase
-    .from('Caixa')
+    .from('caixa')
     .select('tipo, valor');
 
   const saldoCaixa = caixaItems?.reduce((acc, item) => {

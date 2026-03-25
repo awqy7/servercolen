@@ -6,7 +6,7 @@ import { revalidatePath } from 'next/cache';
 export async function getEstoque() {
   const supabase = await createClient();
   const { data } = await supabase
-    .from('Estoque')
+    .from('estoque')
     .select('*')
     .order('nome', { ascending: true });
   return data || [];
@@ -25,7 +25,7 @@ export async function addPeca(formData: FormData) {
 
     const supabase = await createClient();
     const { error } = await supabase
-      .from('Estoque')
+      .from('estoque')
       .insert([{ nome, quantidade, valor_custo, valor_venda }]);
 
     if (error) {
@@ -46,7 +46,7 @@ export async function addPeca(formData: FormData) {
 export async function deletePeca(id: number) {
   const supabase = await createClient();
   await supabase
-    .from('Estoque')
+    .from('estoque')
     .delete()
     .eq('id', id);
     
@@ -58,7 +58,7 @@ export async function deletePeca(id: number) {
 export async function addQuantidade(id: number, atual: number, adicionar: number) {
   const supabase = await createClient();
   await supabase
-    .from('Estoque')
+    .from('estoque')
     .update({ quantidade: atual + adicionar })
     .eq('id', id);
     

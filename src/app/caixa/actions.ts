@@ -6,7 +6,7 @@ import { revalidatePath } from 'next/cache';
 export async function getCaixaTransacoes() {
   const supabase = await createClient();
   const { data: transacoes } = await supabase
-    .from('Caixa')
+    .from('caixa')
     .select('*')
     .order('data', { ascending: false })
     .limit(100);
@@ -25,7 +25,7 @@ export async function addTransacao(formData: FormData) {
 
     const supabase = await createClient();
     const { error } = await supabase
-      .from('Caixa')
+      .from('caixa')
       .insert([{ tipo, valor, descricao }]);
 
     if (error) {
@@ -45,7 +45,7 @@ export async function addTransacao(formData: FormData) {
 export async function deleteTransacao(id: number) {
   const supabase = await createClient();
   await supabase
-    .from('Caixa')
+    .from('caixa')
     .delete()
     .eq('id', id);
     

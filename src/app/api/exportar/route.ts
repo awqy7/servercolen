@@ -19,17 +19,17 @@ export async function GET(request: NextRequest) {
 
     // Fetch Orders
     const { data: ordensRaw } = await supabase
-      .from('OrdensServico')
-      .select('id, data_entrada, status, valor_pecas, valor_maodeobra, valor_final, Clientes (nome, placa, modelo)')
-      .gte('data_entrada', startDate)
-      .order('data_entrada', { ascending: false });
+      .from('ordens_servico')
+      .select('id, created_at, status, valor_pecas, valor_maodeobra, valor_final, clientes (nome, placa, modelo)')
+      .gte('created_at', startDate)
+      .order('created_at', { ascending: false });
 
     const ordens = (ordensRaw || []).map((os: any) => ({
       "OS#": os.id,
-      "Data/Hora": new Date(os.data_entrada).toLocaleString('pt-BR'),
-      "Cliente": os.Clientes?.nome,
-      "Placa": os.Clientes?.placa,
-      "Veículo": os.Clientes?.modelo,
+      "Data/Hora": new Date(os.created_at).toLocaleString('pt-BR'),
+      "Cliente": os.clientes?.nome,
+      "Placa": os.clientes?.placa,
+      "Veículo": os.clientes?.modelo,
       "Status": os.status,
       "Total Peças (R$)": os.valor_pecas,
       "Mão de Obra (R$)": os.valor_maodeobra,
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
 
     // Fetch Cash register
     const { data: caixaRaw } = await supabase
-      .from('Caixa')
+      .from('caixa')
       .select('*')
       .gte('data', startDate)
       .order('data', { ascending: false });
@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
     XLSX.utils.book_append_sheet(wb, wsCaixa, 'Caixa');
 
     // Sheet 3 - Estoque
-    const { data: estoqueRaw } = await supabase.from('Estoque').select('*').order('nome', { ascending: true });
+    const { data: estoqueRaw } = await supabase.from('estoque').select('*').order('nome', { ascending: true });
     const estoque = (estoqueRaw || []).map((e: any) => ({
       "Peça/Produto": e.nome,
       "Quantidade": e.quantidade,

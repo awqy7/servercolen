@@ -6,12 +6,12 @@ import { revalidatePath } from 'next/cache';
 export async function getOrdens() {
   const supabase = await createClient();
   const { data, error } = await supabase
-    .from('OrdensServico')
+    .from('ordens_servico')
     .select(`
       *,
-      Clientes (id, nome, placa),
-      OS_Itens (*, Estoque (nome)),
-      OS_MaoDeObra (*)
+      clientes (id, nome, placa),
+      os_itens (*, estoque (nome)),
+      os_maodeobra (*)
     `)
     .order('id', { ascending: false });
 
@@ -20,25 +20,25 @@ export async function getOrdens() {
   // Map to match the previous structure if needed
   return data.map((os: any) => ({
     ...os,
-    cliente_nome: os.Clientes?.nome,
-    cliente_placa: os.Clientes?.placa,
-    pecas: os.OS_Itens?.map((item: any) => ({
+    cliente_nome: os.clientes?.nome,
+    cliente_placa: os.clientes?.placa,
+    pecas: os.os_itens?.map((item: any) => ({
       ...item,
-      nome: item.Estoque?.nome
+      nome: item.estoque?.nome
     })),
-    servicos: os.OS_MaoDeObra
+    servicos: os.os_maodeobra
   }));
 }
 
 export async function getOrdemCompleta(id: number) {
   const supabase = await createClient();
   const { data, error } = await supabase
-    .from('OrdensServico')
+    .from('ordens_servico')
     .select(`
       *,
-      Clientes (*),
-      OS_Itens (*, Estoque (nome)),
-      OS_MaoDeObra (*)
+      clientes (*),
+      os_itens (*, estoque (nome)),
+      os_maodeobra (*)
     `)
     .eq('id', id)
     .single();
@@ -48,16 +48,16 @@ export async function getOrdemCompleta(id: number) {
   return {
     os: {
       ...data,
-      cliente_nome: data.Clientes?.nome,
-      cliente_telefone: data.Clientes?.telefone,
-      cliente_placa: data.Clientes?.placa,
-      cliente_modelo: data.Clientes?.modelo
+      cliente_nome: data.clientes?.nome,
+      cliente_telefone: data.clientes?.telefone,
+      cliente_placa: data.clientes?.placa,
+      cliente_modelo: data.clientes?.modelo
     },
-    pecas: data.OS_Itens?.map((item: any) => ({
+    pecas: data.os_itens?.map((item: any) => ({
       ...item,
-      nome: item.Estoque?.nome
+      nome: item.estoque?.nome
     })),
-    servicos: data.OS_MaoDeObra
+    servicos: data.os_maodeobra
   };
 }
 
@@ -76,7 +76,7 @@ export async function createOrdem(data: {
 
   // 1. Inserir OS
   const { data: os, error: osError } = await supabase
-    .from('OrdensServico')
+    .from('ordens_servico')
     .insert([{
       cliente_id: data.cliente_id,
       status,
@@ -102,16 +102,15 @@ export async function createOrdem(data: {
     }));
 
   if (itemsToInsert.length > 0) {
-    const { error: itemsError } = await supabase.from('OS_Itens').insert(itemsToInsert);
+    const { error: itemsError } = await supabase.from('os_itens').insert(itemsToInsert);
     if (itemsError) throw itemsError;
     
-    // Atualizar estoque (um por um pois Supabase não tem decrement/increment em massa fácil sem RPC)
+    // Atualizar estoque
     for (const p of data.pecas) {
       if (p.quantidade <= 0) continue;
       
-      // Get current quantity
       const { data: currentStock, error: stockError } = await supabase
-        .from('Estoque')
+        .from('estoque')
         .select('quantidade')
         .eq('id', p.id)
         .single();
@@ -121,7 +120,7 @@ export async function createOrdem(data: {
       const newQty = Math.max(0, (currentStock?.quantidade || 0) - p.quantidade);
       
       const { error: updateError } = await supabase
-        .from('Estoque')
+        .from('estoque')
         .update({ quantidade: newQty })
         .eq('id', p.id);
 
@@ -139,13 +138,13 @@ export async function createOrdem(data: {
     }));
 
   if (servicosToInsert.length > 0) {
-    const { error: svcError } = await supabase.from('OS_MaoDeObra').insert(servicosToInsert);
+    const { error: svcError } = await supabase.from('os_maodeobra').insert(servicosToInsert);
     if (svcError) throw svcError;
   }
 
   // 4. Lançar no Caixa
   if (data.lancarCaixa) {
-    const { error: caixaError } = await supabase.from('Caixa').insert([{
+    const { error: caixaError } = await supabase.from('caixa').insert([{
       tipo: 'Entrada',
       valor: valor_final,
       descricao: `Recebimento Ref. OS #${osId}`,
@@ -165,7 +164,7 @@ export async function createOrdem(data: {
 
 export async function deleteOrdem(id: number) {
   const supabase = await createClient();
-  await supabase.from('OrdensServico').delete().eq('id', id);
+  await supabase.from('ordens_servico').delete().eq('id', id);
   
   revalidatePath('/ordens-servico');
   revalidatePath('/ordens-servico/nova');
@@ -177,7 +176,7 @@ export async function concluirOrdem(id: number) {
   
   // 1. Get OS info
   const { data: os } = await supabase
-    .from('OrdensServico')
+    .from('ordens_servico')
     .select('valor_final')
     .eq('id', id)
     .single();
@@ -186,13 +185,13 @@ export async function concluirOrdem(id: number) {
 
   // 2. Check if already in Caixa
   const { data: exists } = await supabase
-    .from('Caixa')
+    .from('caixa')
     .select('id')
     .eq('os_id', id)
     .maybeSingle();
   
   if (!exists) {
-    const { error: caixaError } = await supabase.from('Caixa').insert([{
+    const { error: caixaError } = await supabase.from('caixa').insert([{
       tipo: 'Entrada',
       valor: os.valor_final,
       descricao: `Recebimento Ref. OS #${id}`,
@@ -203,7 +202,7 @@ export async function concluirOrdem(id: number) {
 
   // 3. Update status
   const { error: statusError } = await supabase
-    .from('OrdensServico')
+    .from('ordens_servico')
     .update({ status: 'Concluído' })
     .eq('id', id);
   
@@ -224,20 +223,20 @@ export async function updateOrdem(id: number, data: {
 
   // 1. Estornar estoque atual
   const { data: itensAntigos } = await supabase
-    .from('OS_Itens')
+    .from('os_itens')
     .select('estoque_id, quantidade')
     .eq('os_id', id);
 
   if (itensAntigos) {
     for (const item of itensAntigos) {
-      const { data: stock } = await supabase.from('Estoque').select('quantidade').eq('id', item.estoque_id).single();
-      await supabase.from('Estoque').update({ quantidade: (stock?.quantidade || 0) + item.quantidade }).eq('id', item.estoque_id);
+      const { data: stock } = await supabase.from('estoque').select('quantidade').eq('id', item.estoque_id).single();
+      await supabase.from('estoque').update({ quantidade: (stock?.quantidade || 0) + item.quantidade }).eq('id', item.estoque_id);
     }
   }
 
   // 2. Deletar itens e serviços antigos
-  await supabase.from('OS_Itens').delete().eq('os_id', id);
-  await supabase.from('OS_MaoDeObra').delete().eq('os_id', id);
+  await supabase.from('os_itens').delete().eq('os_id', id);
+  await supabase.from('os_maodeobra').delete().eq('os_id', id);
 
   // 3. Recalcular e Atualizar OS
   const valor_pecas = data.pecas.reduce((acc, p) => acc + (p.quantidade * p.valor_venda), 0);
@@ -245,7 +244,7 @@ export async function updateOrdem(id: number, data: {
   const valor_final = valor_pecas + valor_maodeobra;
 
   await supabase
-    .from('OrdensServico')
+    .from('ordens_servico')
     .update({
       cliente_id: data.cliente_id,
       valor_pecas,
@@ -258,13 +257,13 @@ export async function updateOrdem(id: number, data: {
   if (data.pecas.length > 0) {
     for (const p of data.pecas) {
       if (p.quantidade <= 0) continue;
-      const { error: itemError } = await supabase.from('OS_Itens').insert([{ os_id: id, estoque_id: p.id, quantidade: p.quantidade, valor_unitario: p.valor_venda }]);
+      const { error: itemError } = await supabase.from('os_itens').insert([{ os_id: id, estoque_id: p.id, quantidade: p.quantidade, valor_unitario: p.valor_venda }]);
       if (itemError) throw itemError;
       
-      const { data: stock, error: stockError } = await supabase.from('Estoque').select('quantidade').eq('id', p.id).single();
+      const { data: stock, error: stockError } = await supabase.from('estoque').select('quantidade').eq('id', p.id).single();
       if (stockError) throw stockError;
       
-      const { error: updateError } = await supabase.from('Estoque').update({ quantidade: Math.max(0, (stock?.quantidade || 0) - p.quantidade) }).eq('id', p.id);
+      const { error: updateError } = await supabase.from('estoque').update({ quantidade: Math.max(0, (stock?.quantidade || 0) - p.quantidade) }).eq('id', p.id);
       if (updateError) throw updateError;
     }
   }
@@ -274,7 +273,7 @@ export async function updateOrdem(id: number, data: {
       .filter(s => s.descricao && s.valor > 0)
       .map(s => ({ os_id: id, descricao: s.descricao, valor: s.valor }));
     if (servicosToInsert.length > 0) {
-      const { error: svcError } = await supabase.from('OS_MaoDeObra').insert(servicosToInsert);
+      const { error: svcError } = await supabase.from('os_maodeobra').insert(servicosToInsert);
       if (svcError) throw svcError;
     }
   }

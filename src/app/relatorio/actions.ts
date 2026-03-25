@@ -30,25 +30,25 @@ export async function getRelatorio(periodo: Periodo) {
 
   // OS concluídas no período
   const { data: osConcluidas } = await supabase
-    .from('OrdensServico')
+    .from('ordens_servico')
     .select(`
       id,
-      data_entrada,
+      created_at,
       valor_final,
       valor_pecas,
       valor_maodeobra,
       status,
-      Clientes (nome, placa, modelo)
+      clientes (nome, placa, modelo)
     `)
     .eq('status', 'Concluído')
-    .gte('data_entrada', startDate)
-    .order('data_entrada', { ascending: false });
+    .gte('created_at', startDate)
+    .order('created_at', { ascending: false });
 
   const mappedOS = osConcluidas?.map((os: any) => ({
     ...os,
-    cliente_nome: os.Clientes?.nome,
-    placa: os.Clientes?.placa,
-    modelo: os.Clientes?.modelo
+    cliente_nome: os.clientes?.nome,
+    placa: os.clientes?.placa,
+    modelo: os.clientes?.modelo
   })) || [];
 
   const resumoOS = mappedOS.reduce((acc, os) => ({
@@ -60,7 +60,7 @@ export async function getRelatorio(periodo: Periodo) {
 
   // Transações do caixa no período
   const { data: transacoes } = await supabase
-    .from('Caixa')
+    .from('caixa')
     .select('*')
     .gte('data', startDate)
     .order('data', { ascending: false });

@@ -6,7 +6,7 @@ import { revalidatePath } from 'next/cache';
 export async function getClientes() {
   const supabase = await createClient();
   const { data } = await supabase
-    .from('Clientes')
+    .from('clientes')
     .select('*')
     .order('nome', { ascending: true });
   return data || [];
@@ -25,7 +25,7 @@ export async function addCliente(formData: FormData) {
 
     const supabase = await createClient();
     const { error } = await supabase
-      .from('Clientes')
+      .from('clientes')
       .insert([{ nome, telefone, placa, modelo }]);
 
     if (error) {
@@ -48,7 +48,7 @@ export async function addClienteDirect(nome: string, telefone: string, placa: st
 
   const supabase = await createClient();
   const { data, error } = await supabase
-    .from('Clientes')
+    .from('clientes')
     .insert([{ nome, telefone, placa, modelo }])
     .select()
     .single();
@@ -65,7 +65,7 @@ export async function addClienteDirect(nome: string, telefone: string, placa: st
 export async function deleteCliente(id: number) {
   const supabase = await createClient();
   await supabase
-    .from('Clientes')
+    .from('clientes')
     .delete()
     .eq('id', id);
     
