@@ -106,13 +106,19 @@ export default function NovaOSForm({ clientes, estoque }: { clientes: any[], est
         return;
       }
       
-      await createOrdem({
+      const result = await createOrdem({
         cliente_id: parseInt(finalClienteId),
         pecas: pecasUsadas,
         servicos,
         lancarCaixa
       });
-      router.push('/ordens-servico');
+
+      if (result.success) {
+        router.push('/ordens-servico');
+      } else {
+        alert(result.error || 'Erro ao processar solicitação.');
+        setLoading(false);
+      }
     } catch (e) {
       console.error(e);
       alert('Erro ao processar solicitação. Verifique os dados.');

@@ -46,20 +46,28 @@ export async function addCliente(formData: FormData) {
 export async function addClienteDirect(nome: string, telefone: string, placa: string, modelo: string) {
   if (!nome) return null;
 
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from('clientes')
-    .insert([{ nome, telefone, placa, modelo }])
-    .select()
-    .single();
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from('clientes')
+      .insert([{ nome, telefone, placa, modelo }])
+      .select()
+      .single();
 
-  if (error) return null;
+    if (error) {
+      console.error('Erro ao criar cliente direto:', error);
+      return null;
+    }
 
-  revalidatePath('/clientes');
-  revalidatePath('/ordens-servico/nova');
-  revalidatePath('/ordens-servico');
+    revalidatePath('/clientes');
+    revalidatePath('/ordens-servico/nova');
+    revalidatePath('/ordens-servico');
 
-  return data;
+    return data;
+  } catch (e) {
+    console.error('Exception in addClienteDirect:', e);
+    return null;
+  }
 }
 
 export async function deleteCliente(id: number) {

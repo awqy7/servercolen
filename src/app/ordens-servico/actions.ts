@@ -67,99 +67,104 @@ export async function createOrdem(data: {
   servicos: { descricao: string; valor: number }[];
   lancarCaixa: boolean;
 }) {
-  const supabase = await createClient();
-  
-  const valor_pecas = data.pecas.reduce((acc, p) => acc + (p.quantidade * p.valor_venda), 0);
-  const valor_maodeobra = data.servicos.reduce((acc, s) => acc + s.valor, 0);
-  const valor_final = valor_pecas + valor_maodeobra;
-  const status = data.lancarCaixa ? 'Concluído' : 'Em Andamento';
-
-  // 1. Inserir OS
-  const { data: os, error: osError } = await supabase
-    .from('ordens_servico')
-    .insert([{
-      cliente_id: data.cliente_id,
-      status,
-      valor_pecas,
-      valor_maodeobra,
-      valor_final
-    }])
-    .select()
-    .single();
-
-  if (osError) throw osError;
-
-  const osId = os.id;
-
-  // 2. Inserir Itens e atualizar estoque
-  const itemsToInsert = data.pecas
-    .filter(p => p.quantidade > 0)
-    .map(p => ({
-      os_id: osId,
-      estoque_id: p.id,
-      quantidade: p.quantidade,
-      valor_unitario: p.valor_venda
-    }));
-
-  if (itemsToInsert.length > 0) {
-    const { error: itemsError } = await supabase.from('os_itens').insert(itemsToInsert);
-    if (itemsError) throw itemsError;
+  try {
+    const supabase = await createClient();
     
-    // Atualizar estoque
-    for (const p of data.pecas) {
-      if (p.quantidade <= 0) continue;
-      
-      const { data: currentStock, error: stockError } = await supabase
-        .from('estoque')
-        .select('quantidade')
-        .eq('id', p.id)
-        .single();
-        
-      if (stockError) throw stockError;
-        
-      const newQty = Math.max(0, (currentStock?.quantidade || 0) - p.quantidade);
-      
-      const { error: updateError } = await supabase
-        .from('estoque')
-        .update({ quantidade: newQty })
-        .eq('id', p.id);
+    const valor_pecas = data.pecas.reduce((acc, p) => acc + (p.quantidade * p.valor_venda), 0);
+    const valor_maodeobra = data.servicos.reduce((acc, s) => acc + s.valor, 0);
+    const valor_final = valor_pecas + valor_maodeobra;
+    const status = data.lancarCaixa ? 'Concluído' : 'Em Andamento';
 
-      if (updateError) throw updateError;
+    // 1. Inserir OS
+    const { data: os, error: osError } = await supabase
+      .from('ordens_servico')
+      .insert([{
+        cliente_id: data.cliente_id,
+        status,
+        valor_pecas,
+        valor_maodeobra,
+        valor_final
+      }])
+      .select()
+      .single();
+
+    if (osError) return { success: false, error: `Erro ao criar OS: ${osError.message}` };
+
+    const osId = os.id;
+
+    // 2. Inserir Itens e atualizar estoque
+    const itemsToInsert = data.pecas
+      .filter(p => p.quantidade > 0)
+      .map(p => ({
+        os_id: osId,
+        estoque_id: p.id,
+        quantidade: p.quantidade,
+        valor_unitario: p.valor_venda
+      }));
+
+    if (itemsToInsert.length > 0) {
+      const { error: itemsError } = await supabase.from('os_itens').insert(itemsToInsert);
+      if (itemsError) return { success: false, error: `Erro ao inserir peças: ${itemsError.message}` };
+      
+      // Atualizar estoque
+      for (const p of data.pecas) {
+        if (p.quantidade <= 0) continue;
+        
+        const { data: currentStock, error: stockError } = await supabase
+          .from('estoque')
+          .select('quantidade')
+          .eq('id', p.id)
+          .single();
+          
+        if (stockError) return { success: false, error: `Erro ao consultar estoque (Item ID ${p.id}): ${stockError.message}` };
+          
+        const newQty = Math.max(0, (currentStock?.quantidade || 0) - p.quantidade);
+        
+        const { error: updateError } = await supabase
+          .from('estoque')
+          .update({ quantidade: newQty })
+          .eq('id', p.id);
+
+        if (updateError) return { success: false, error: `Erro ao atualizar quantidade (Item ID ${p.id}): ${updateError.message}` };
+      }
     }
+
+    // 3. Inserir Mão de Obra
+    const servicosToInsert = data.servicos
+      .filter(s => s.descricao && s.valor > 0)
+      .map(s => ({
+        os_id: osId,
+        descricao: s.descricao,
+        valor: s.valor
+      }));
+
+    if (servicosToInsert.length > 0) {
+      const { error: svcError } = await supabase.from('os_maodeobra').insert(servicosToInsert);
+      if (svcError) return { success: false, error: `Erro ao inserir serviços: ${svcError.message}` };
+    }
+
+    // 4. Lançar no Caixa
+    if (data.lancarCaixa) {
+      const { error: caixaError } = await supabase.from('caixa').insert([{
+        tipo: 'Entrada',
+        valor: valor_final,
+        descricao: `Recebimento Ref. OS #${osId}`,
+        os_id: osId
+      }]);
+      if (caixaError) return { success: false, error: `Erro ao lançar no caixa: ${caixaError.message}` };
+    }
+
+    revalidatePath('/ordens-servico');
+    revalidatePath('/ordens-servico/nova');
+    revalidatePath('/estoque');
+    revalidatePath('/caixa');
+    revalidatePath('/');
+    
+    return { success: true, id: osId };
+  } catch (err: any) {
+    console.error('Exception in createOrdem:', err);
+    return { success: false, error: `Erro interno: ${err.message}` };
   }
-
-  // 3. Inserir Mão de Obra
-  const servicosToInsert = data.servicos
-    .filter(s => s.descricao && s.valor > 0)
-    .map(s => ({
-      os_id: osId,
-      descricao: s.descricao,
-      valor: s.valor
-    }));
-
-  if (servicosToInsert.length > 0) {
-    const { error: svcError } = await supabase.from('os_maodeobra').insert(servicosToInsert);
-    if (svcError) throw svcError;
-  }
-
-  // 4. Lançar no Caixa
-  if (data.lancarCaixa) {
-    const { error: caixaError } = await supabase.from('caixa').insert([{
-      tipo: 'Entrada',
-      valor: valor_final,
-      descricao: `Recebimento Ref. OS #${osId}`,
-      os_id: osId
-    }]);
-    if (caixaError) throw caixaError;
-  }
-
-  revalidatePath('/ordens-servico');
-  revalidatePath('/ordens-servico/nova');
-  revalidatePath('/estoque');
-  revalidatePath('/caixa');
-  revalidatePath('/');
-  
-  return osId;
 }
 
 export async function deleteOrdem(id: number) {
