@@ -75,7 +75,21 @@ export async function createOrdem(data: {
     const valor_final = valor_pecas + valor_maodeobra;
     const status = data.lancarCaixa ? 'Concluído' : 'Em Andamento';
 
-    // 1. Inserir OS
+    // 1. Verificar se o cliente existe
+    const { data: clientExists, error: clientCheckError } = await supabase
+      .from('clientes')
+      .select('id')
+      .eq('id', data.cliente_id)
+      .single();
+
+    if (clientCheckError || !clientExists) {
+      return { 
+        success: false, 
+        error: `Cliente não encontrado (ID: ${data.cliente_id}). Por favor, atualize a página (F5) e selecione o cliente novamente.` 
+      };
+    }
+
+    // 2. Inserir OS
     const { data: os, error: osError } = await supabase
       .from('ordens_servico')
       .insert([{

@@ -3,14 +3,24 @@
 import { useState } from 'react';
 import { createOrdem } from '../actions';
 import { addClienteDirect } from '@/app/clientes/actions';
+import { addPecaDirect } from '@/app/estoque/actions';
 import { useRouter } from 'next/navigation';
-import { Plus, Trash2, CheckCircle, UserCircle, UserPlus, X } from 'lucide-react';
+import { Plus, Trash2, CheckCircle, UserCircle, UserPlus, X, Box, PackagePlus } from 'lucide-react';
 
 export default function NovaOSForm({ clientes, estoque }: { clientes: any[], estoque: any[] }) {
   const router = useRouter();
   
   const [localClientes, setLocalClientes] = useState(clientes);
+  const [localEstoque, setLocalEstoque] = useState(estoque);
   const [clienteId, setClienteId] = useState('');
+  
+  const [productMode, setProductMode] = useState<'existing' | 'new'>('existing');
+
+  // New Product fields
+  const [newPecaNome, setNewPecaNome] = useState('');
+  const [newPecaQtdEstoque, setNewPecaQtdEstoque] = useState(1);
+  const [newPecaValorCusto, setNewPecaValorCusto] = useState(0);
+  const [newPecaValorVenda, setNewPecaValorVenda] = useState(0);
   
   // Tab control: 'existing' or 'new'
   const [clientMode, setClientMode] = useState<'existing' | 'new'>('existing');
@@ -38,33 +48,67 @@ export default function NovaOSForm({ clientes, estoque }: { clientes: any[], est
   const valorMaoDeObra = servicos.reduce((acc, s) => acc + s.valor, 0);
   const valorTotal = valorPecas + valorMaoDeObra;
 
-  const handleAddPeca = () => {
-    if (!pecaSelecionada) return;
-    const pecaDb = estoque.find(e => e.id.toString() === pecaSelecionada);
-    if (!pecaDb || qtdPecaSelecionada <= 0 || qtdPecaSelecionada > pecaDb.quantidade) {
-      alert("Quantidade inválida ou maior que o estoque disponível.");
-      return;
-    }
-    
-    // Check if already added
-    const exists = pecasUsadas.find(p => p.id === pecaDb.id);
-    if (exists) {
-      if (exists.quantidade + qtdPecaSelecionada > pecaDb.quantidade) {
-        alert("A soma da quantidade já adicionada excede o estoque disponível.");
+  const handleAddPeca = async () => {
+    if (productMode === 'existing') {
+      if (!pecaSelecionada) return;
+      const pecaDb = localEstoque.find(e => e.id.toString() === pecaSelecionada);
+      if (!pecaDb || qtdPecaSelecionada <= 0 || qtdPecaSelecionada > pecaDb.quantidade) {
+        alert("Quantidade inválida ou maior que o estoque disponível.");
         return;
       }
-      setPecasUsadas(pecasUsadas.map(p => p.id === pecaDb.id ? { ...p, quantidade: p.quantidade + qtdPecaSelecionada } : p));
+      
+      const exists = pecasUsadas.find(p => p.id === pecaDb.id);
+      if (exists) {
+        if (exists.quantidade + qtdPecaSelecionada > pecaDb.quantidade) {
+          alert("A soma da quantidade já adicionada excede o estoque disponível.");
+          return;
+        }
+        setPecasUsadas(pecasUsadas.map(p => p.id === pecaDb.id ? { ...p, quantidade: p.quantidade + qtdPecaSelecionada } : p));
+      } else {
+        setPecasUsadas([...pecasUsadas, { 
+          id: pecaDb.id, 
+          nome: pecaDb.nome, 
+          quantidade: qtdPecaSelecionada, 
+          valor_venda: pecaDb.valor_venda,
+          max: pecaDb.quantidade
+        }]);
+      }
+      setQtdPecaSelecionada(1);
+      setPecaSelecionada('');
     } else {
-      setPecasUsadas([...pecasUsadas, { 
-        id: pecaDb.id, 
-        nome: pecaDb.nome, 
-        quantidade: qtdPecaSelecionada, 
-        valor_venda: pecaDb.valor_venda,
-        max: pecaDb.quantidade
-      }]);
+      // New Product Mode
+      if (!newPecaNome || newPecaValorVenda <= 0) {
+        alert("Preencha o nome e o valor de venda do produto.");
+        return;
+      }
+
+      setLoading(true);
+      const newPeca = await addPecaDirect(newPecaNome, newPecaQtdEstoque, newPecaValorCusto, newPecaValorVenda);
+      setLoading(false);
+
+      if (newPeca) {
+        // Add to local stock so it can be found by ID later if needed (though it's already in the OS)
+        setLocalEstoque([...localEstoque, newPeca]);
+        
+        // Use 1 as default quantity used in OS for the newly created product
+        setPecasUsadas([...pecasUsadas, { 
+          id: newPeca.id, 
+          nome: newPeca.nome, 
+          quantidade: 1, 
+          valor_venda: newPeca.valor_venda,
+          max: newPeca.quantidade
+        }]);
+
+        // Reset fields
+        setNewPecaNome('');
+        setNewPecaQtdEstoque(1);
+        setNewPecaValorCusto(0);
+        setNewPecaValorVenda(0);
+        setProductMode('existing');
+      } else {
+        alert("Erro ao cadastrar novo produto.");
+      }
     }
-    setQtdPecaSelecionada(1);
-    setPecaSelecionada('');
   };
 
   const handleAddServico = () => {
@@ -201,30 +245,85 @@ export default function NovaOSForm({ clientes, estoque }: { clientes: any[], est
         </div>
 
         <div className="card">
-          <h2 style={{ fontSize: '1.1rem', marginBottom: '16px' }}>2. Peças e Produtos</h2>
-          <div className="flex-row" style={{ alignItems: 'flex-end', marginBottom: '16px', gap: '8px' }}>
-            <div style={{ flex: 1 }}>
-              <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'flex', justifyContent: 'space-between' }}>
-                Selecionar Peça do Estoque
-                <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>(Total no sistema: {estoque.length})</span>
-              </label>
-              <select className="select" value={pecaSelecionada} onChange={e => setPecaSelecionada(e.target.value)}>
-                <option value="">-- Estoque --</option>
-                {estoque.map(e => (
-                  <option key={e.id} value={e.id} disabled={e.quantidade === 0}>
-                    {e.nome} (Qtd: {e.quantidade}) - R$ {e.valor_venda.toFixed(2)}
-                  </option>
-                ))}
-              </select>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <h2 style={{ fontSize: '1.1rem', margin: 0 }}>2. Peças e Produtos</h2>
+            <div style={{ display: 'flex', gap: '8px', background: 'var(--surface-hover)', padding: '4px', borderRadius: '8px' }}>
+              <button 
+                type="button"
+                onClick={() => setProductMode('existing')}
+                style={{ 
+                  padding: '6px 12px', fontSize: '0.8rem', borderRadius: '6px', border: 'none', cursor: 'pointer',
+                  background: productMode === 'existing' ? 'var(--surface)' : 'transparent',
+                  color: productMode === 'existing' ? 'var(--primary)' : 'var(--text-muted)',
+                  fontWeight: 600, boxShadow: productMode === 'existing' ? '0 2px 4px rgba(0,0,0,0.1)' : 'none'
+                }}
+              >
+                <Box size={14} style={{ marginRight: '4px' }}/> Estoque
+              </button>
+              <button 
+                type="button"
+                onClick={() => setProductMode('new')}
+                style={{ 
+                  padding: '6px 12px', fontSize: '0.8rem', borderRadius: '6px', border: 'none', cursor: 'pointer',
+                  background: productMode === 'new' ? 'var(--surface)' : 'transparent',
+                  color: productMode === 'new' ? 'var(--primary)' : 'var(--text-muted)',
+                  fontWeight: 600, boxShadow: productMode === 'new' ? '0 2px 4px rgba(0,0,0,0.1)' : 'none'
+                }}
+              >
+                <PackagePlus size={14} style={{ marginRight: '4px' }}/> Novo
+              </button>
             </div>
-            <div style={{ width: '100px' }}>
-              <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Qtd Usada</label>
-              <input type="number" min="1" className="input" value={qtdPecaSelecionada} onChange={e => setQtdPecaSelecionada(parseInt(e.target.value) || 0)} />
-            </div>
-            <button type="button" onClick={handleAddPeca} className="btn btn-primary" style={{ height: '44px' }}>
-              <Plus size={18}/>
-            </button>
           </div>
+
+          {productMode === 'existing' ? (
+            <div className="flex-row" style={{ alignItems: 'flex-end', marginBottom: '16px', gap: '8px' }}>
+              <div style={{ flex: 1 }}>
+                <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'flex', justifyContent: 'space-between' }}>
+                  Selecionar Peça do Estoque
+                  <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>(Total no sistema: {localEstoque.length})</span>
+                </label>
+                <select className="select" value={pecaSelecionada} onChange={e => setPecaSelecionada(e.target.value)}>
+                  <option value="">-- Estoque --</option>
+                  {localEstoque.map(e => (
+                    <option key={e.id} value={e.id} disabled={e.quantidade === 0}>
+                      {e.nome} (Qtd: {e.quantidade}) - R$ {e.valor_venda.toFixed(2)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div style={{ width: '100px' }}>
+                <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Qtd Usada</label>
+                <input type="number" min="1" className="input" value={qtdPecaSelecionada} onChange={e => setQtdPecaSelecionada(parseInt(e.target.value) || 0)} />
+              </div>
+              <button type="button" onClick={handleAddPeca} className="btn btn-primary" style={{ height: '44px' }}>
+                <Plus size={18}/>
+              </button>
+            </div>
+          ) : (
+            <div style={{ marginBottom: '16px', display: 'flex', flexDirection: 'column', gap: '12px', border: '1px dashed var(--border)', padding: '16px', borderRadius: '12px' }}>
+              <div className="input-group" style={{ marginBottom: 0 }}>
+                <label style={{ fontSize: '0.85rem' }}>Nome da Peça / Produto</label>
+                <input type="text" className="input" value={newPecaNome} onChange={e => setNewPecaNome(e.target.value)} placeholder="Ex: Filtro de Óleo Bosch" />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+                <div className="input-group" style={{ marginBottom: 0 }}>
+                  <label style={{ fontSize: '0.85rem' }}>V. Custo (R$)</label>
+                  <input type="number" step="0.01" className="input" value={newPecaValorCusto || ''} onChange={e => setNewPecaValorCusto(parseFloat(e.target.value) || 0)} placeholder="0.00" />
+                </div>
+                <div className="input-group" style={{ marginBottom: 0 }}>
+                  <label style={{ fontSize: '0.85rem' }}>V. Venda (R$)</label>
+                  <input type="number" step="0.01" className="input" value={newPecaValorVenda || ''} onChange={e => setNewPecaValorVenda(parseFloat(e.target.value) || 0)} placeholder="0.00" />
+                </div>
+                <div className="input-group" style={{ marginBottom: 0 }}>
+                  <label style={{ fontSize: '0.85rem' }}>Estoque Inicial</label>
+                  <input type="number" className="input" value={newPecaQtdEstoque} onChange={e => setNewPecaQtdEstoque(parseInt(e.target.value) || 0)} />
+                </div>
+              </div>
+              <button type="button" onClick={handleAddPeca} className="btn btn-primary" style={{ width: '100%', marginTop: '8px' }}>
+                <Plus size={18} style={{ marginRight: '8px' }}/> Cadastrar e Adicionar na OS
+              </button>
+            </div>
+          )}
 
           {pecasUsadas.length > 0 && (
             <table className="table" style={{ marginTop: '16px' }}>

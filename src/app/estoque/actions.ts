@@ -66,3 +66,29 @@ export async function addQuantidade(id: number, atual: number, adicionar: number
   revalidatePath('/ordens-servico/nova');
   revalidatePath('/');
 }
+export async function addPecaDirect(nome: string, quantidade: number, valor_custo: number, valor_venda: number) {
+  if (!nome || isNaN(quantidade) || isNaN(valor_custo) || isNaN(valor_venda)) return null;
+
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from('estoque')
+      .insert([{ nome, quantidade, valor_custo, valor_venda }])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Erro ao criar peça direta:', error);
+      return null;
+    }
+
+    revalidatePath('/estoque');
+    revalidatePath('/ordens-servico/nova');
+    revalidatePath('/');
+
+    return data;
+  } catch (e) {
+    console.error('Exception in addPecaDirect:', e);
+    return null;
+  }
+}
