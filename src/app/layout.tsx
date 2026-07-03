@@ -5,13 +5,13 @@ import { Wrench, LayoutDashboard, Package, FileText, WalletCards, Users, BarChar
 import { createClient } from '@/utils/supabase/server';
 import { signOut } from './actions';
 import { ToastProvider } from './components/Toast';
+import MobileMenu from './components/MobileMenu';
 
 export const metadata: Metadata = {
   title: 'AutoRepair Pro - Gestão de Oficina',
   description: 'Sistema completo para gestão de oficinas',
 };
 
-// Sidebar component extracted to simplify layout
 function Sidebar() {
   return (
     <aside className="sidebar">
@@ -73,6 +73,16 @@ export default async function RootLayout({
         <div className="app-layout">
           {user && <Sidebar />}
           <main className={user ? "main-content" : "auth-content"}>
+            {user && (
+              <div className="mobile-topbar">
+                <MobileMenu />
+                <div className="mobile-topbar-title">
+                  <Wrench size={20} color="var(--primary)" />
+                  AutoRepair<span>Pro</span>
+                </div>
+                <div style={{ width: 44 }} />
+              </div>
+            )}
             {children}
           </main>
         </div>
