@@ -342,11 +342,11 @@ export default function NovaOSForm({ clientes, estoque }: { clientes: any[], est
               <tbody>
                 {pecasUsadas.map((p, idx) => (
                   <tr key={idx}>
-                    <td>{p.nome}</td>
-                    <td>{p.quantidade}</td>
-                    <td>R$ {(p.valor_venda || 0).toFixed(2)}</td>
-                    <td style={{ fontWeight: 600 }}>R$ {((p.quantidade || 0) * (p.valor_venda || 0)).toFixed(2)}</td>
-                    <td>
+                    <td data-label="Peça">{p.nome}</td>
+                    <td data-label="Qtd">{p.quantidade}</td>
+                    <td data-label="V. Unit">R$ {(p.valor_venda || 0).toFixed(2)}</td>
+                    <td data-label="Subtotal" style={{ fontWeight: 600 }}>R$ {((p.quantidade || 0) * (p.valor_venda || 0)).toFixed(2)}</td>
+                    <td data-label="">
                       <button onClick={() => setPecasUsadas(pecasUsadas.filter((_, i) => i !== idx))} className="btn btn-outline" style={{ padding: '4px', borderColor: 'var(--danger)', color: 'var(--danger)' }}>
                         <Trash2 size={16}/>
                       </button>
@@ -386,9 +386,9 @@ export default function NovaOSForm({ clientes, estoque }: { clientes: any[], est
               <tbody>
                 {servicos.map((s, idx) => (
                   <tr key={idx}>
-                    <td>{s.descricao}</td>
-                    <td style={{ fontWeight: 600 }}>R$ {(s.valor || 0).toFixed(2)}</td>
-                    <td>
+                    <td data-label="Serviço">{s.descricao}</td>
+                    <td data-label="Valor" style={{ fontWeight: 600 }}>R$ {(s.valor || 0).toFixed(2)}</td>
+                    <td data-label="">
                       <button onClick={() => setServicos(servicos.filter((_, i) => i !== idx))} className="btn btn-outline" style={{ padding: '4px', borderColor: 'var(--danger)', color: 'var(--danger)' }}>
                         <Trash2 size={16}/>
                       </button>

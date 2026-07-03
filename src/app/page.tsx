@@ -112,8 +112,8 @@ export default async function Dashboard() {
             const altura = Math.max((mes.valor / maxFaturamento) * 140, 8);
             return (
               <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>
-                  {fmt(mes.valor)}
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                  {mes.valor >= 1000 ? `R$ ${(mes.valor / 1000).toFixed(1)}k` : fmt(mes.valor)}
                 </span>
                 <div style={{
                   width: '100%', maxWidth: '60px',
@@ -153,17 +153,17 @@ export default async function Dashboard() {
               <tbody>
                 {stats.ultimasAtividades.map((os: any) => (
                   <tr key={os.id}>
-                    <td><span className="badge badge-primary">#{os.id.toString().padStart(5, '0')}</span></td>
-                    <td style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                    <td data-label="OS"><span className="badge badge-primary">#{os.id.toString().padStart(5, '0')}</span></td>
+                    <td data-label="Data" style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
                       {os.data ? new Date(os.data).toLocaleDateString('pt-BR') : '-'}
                     </td>
-                    <td style={{ fontWeight: 500 }}>{os.cliente || '—'}</td>
-                    <td>
+                    <td data-label="Cliente" style={{ fontWeight: 500 }}>{os.cliente || '—'}</td>
+                    <td data-label="Status">
                       <span className={os.status === 'Concluído' ? 'badge badge-success' : 'badge badge-warning'}>
                         {os.status}
                       </span>
                     </td>
-                    <td style={{ fontWeight: 600 }}>{fmt(os.valor || 0)}</td>
+                    <td data-label="Valor" style={{ fontWeight: 600 }}>{fmt(os.valor || 0)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -195,9 +195,9 @@ export default async function Dashboard() {
               <tbody>
                 {stats.alertasEstoque.map((item: any) => (
                   <tr key={item.id}>
-                    <td>{item.nome}</td>
-                    <td><span className="badge badge-warning">{item.quantidade} unidades</span></td>
-                    <td>
+                    <td data-label="Peça">{item.nome}</td>
+                    <td data-label="Qtd"><span className="badge badge-warning">{item.quantidade} unidades</span></td>
+                    <td data-label="">
                       <Link href="/estoque" className="btn btn-outline" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>
                         Repor
                       </Link>

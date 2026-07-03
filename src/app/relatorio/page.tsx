@@ -151,15 +151,15 @@ export default async function RelatorioPage({
               <tbody>
                 {data.osConcluidas.map((os: any) => (
                   <tr key={os.id}>
-                    <td><span className="badge badge-primary">#{os.id}</span></td>
-                    <td style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                    <td data-label="OS"><span className="badge badge-primary">#{os.id}</span></td>
+                    <td data-label="Data" style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
                       {os.created_at ? new Date(os.created_at).toLocaleString('pt-BR') : '-'}
                     </td>
-                    <td style={{ fontWeight: 600 }}>{os.cliente_nome || '—'}</td>
-                    <td>{os.modelo || '—'} {os.placa ? <span className="badge badge-primary" style={{ marginLeft: 4 }}>{os.placa}</span> : ''}</td>
-                    <td>{fmt(os.valor_pecas)}</td>
-                    <td>{fmt(os.valor_maodeobra)}</td>
-                    <td><strong style={{ color: 'var(--success)' }}>{fmt(os.valor_final)}</strong></td>
+                    <td data-label="Cliente" style={{ fontWeight: 600 }}>{os.cliente_nome || '—'}</td>
+                    <td data-label="Veículo">{os.modelo || '—'} {os.placa ? <span className="badge badge-primary" style={{ marginLeft: 4 }}>{os.placa}</span> : ''}</td>
+                    <td data-label="Peças">{fmt(os.valor_pecas)}</td>
+                    <td data-label="M. Obra">{fmt(os.valor_maodeobra)}</td>
+                    <td data-label="Total"><strong style={{ color: 'var(--success)' }}>{fmt(os.valor_final)}</strong></td>
                   </tr>
                 ))}
               </tbody>
@@ -204,10 +204,10 @@ export default async function RelatorioPage({
               <tbody>
                 {data.transacoes.map((t: any) => (
                   <tr key={t.id}>
-                    <td style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                    <td data-label="Data" style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
                       {new Date(t.data).toLocaleString('pt-BR')}
                     </td>
-                    <td>
+                    <td data-label="Tipo">
                       {t.tipo === 'Entrada' ? (
                         <span className="badge badge-success flex-row" style={{ gap: '4px' }}>
                           <ArrowUpCircle size={14} /> Entrada
@@ -218,11 +218,11 @@ export default async function RelatorioPage({
                         </span>
                       )}
                     </td>
-                    <td>
+                    <td data-label="Descrição">
                       {t.descricao}
                       {t.os_id && <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginLeft: 6 }}>(OS #{t.os_id})</span>}
                     </td>
-                    <td style={{ fontWeight: 600, color: t.tipo === 'Entrada' ? 'var(--success)' : 'var(--danger)' }}>
+                    <td data-label="Valor" style={{ fontWeight: 600, color: t.tipo === 'Entrada' ? 'var(--success)' : 'var(--danger)' }}>
                       {t.tipo === 'Entrada' ? '+' : '-'} {fmt(t.valor)}
                     </td>
                   </tr>

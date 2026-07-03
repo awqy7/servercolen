@@ -43,18 +43,18 @@ export default async function CaixaPage() {
               <tbody>
                 {transacoes.length > 0 ? transacoes.map((t) => (
                   <tr key={t.id}>
-                    <td>{new Date(t.data).toLocaleString('pt-BR')}</td>
-                    <td>
+                    <td data-label="Data">{new Date(t.data).toLocaleString('pt-BR')}</td>
+                    <td data-label="Tipo">
                       {t.tipo === 'Entrada' ? 
                         <span className="badge badge-success flex-row" style={{gap:'4px'}}><ArrowUpCircle size={14}/> Entrada</span> : 
                         <span className="badge badge-warning flex-row" style={{gap:'4px', color: 'var(--danger)', background: 'rgba(239, 68, 68, 0.1)'}}><ArrowDownCircle size={14}/> Saída</span>
                       }
                     </td>
-                    <td>{t.descricao} {t.os_id && <span style={{fontSize:'0.8rem', color:'var(--text-muted)'}}>(OS #{t.os_id})</span>}</td>
-                    <td style={{ fontWeight: 600, color: t.tipo === 'Entrada' ? 'var(--success)' : 'var(--danger)'}}>
+                    <td data-label="Descrição">{t.descricao} {t.os_id && <span style={{fontSize:'0.8rem', color:'var(--text-muted)'}}>(OS #{t.os_id})</span>}</td>
+                    <td data-label="Valor" style={{ fontWeight: 600, color: t.tipo === 'Entrada' ? 'var(--success)' : 'var(--danger)'}}>
                       {t.tipo === 'Entrada' ? '+' : '-'} {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(t.valor)}
                     </td>
-                    <td>
+                    <td data-label="">
                       <form action={async () => {
                         'use server';
                         await deleteTransacao(t.id);

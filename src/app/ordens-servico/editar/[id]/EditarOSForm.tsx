@@ -167,11 +167,11 @@ export default function EditarOSForm({
             <tbody>
               {pecasUsadas.map((p, idx) => (
                 <tr key={idx}>
-                  <td>{p.nome}</td>
-                  <td><strong>{p.quantidade}</strong></td>
-                  <td>R$ {(p.valor_venda || 0).toFixed(2)}</td>
-                  <td style={{ fontWeight: 600 }}>R$ {((p.quantidade || 0) * (p.valor_venda || 0)).toFixed(2)}</td>
-                  <td>
+                  <td data-label="Peça">{p.nome}</td>
+                  <td data-label="Qtd"><strong>{p.quantidade}</strong></td>
+                  <td data-label="V. Unit">R$ {(p.valor_venda || 0).toFixed(2)}</td>
+                  <td data-label="Subtotal" style={{ fontWeight: 600 }}>R$ {((p.quantidade || 0) * (p.valor_venda || 0)).toFixed(2)}</td>
+                  <td data-label="">
                     <button onClick={() => setPecasUsadas(pecasUsadas.filter((_, i) => i !== idx))} className="btn btn-outline" style={{ padding: '6px', color: 'var(--danger)', borderColor: 'var(--danger)' }}>
                       <Trash2 size={16}/>
                     </button>
@@ -214,9 +214,9 @@ export default function EditarOSForm({
             <tbody>
               {servicos.map((s, idx) => (
                 <tr key={idx}>
-                  <td>{s.descricao}</td>
-                  <td style={{ fontWeight: 600 }}>R$ {(s.valor || 0).toFixed(2)}</td>
-                  <td>
+                  <td data-label="Serviço">{s.descricao}</td>
+                  <td data-label="Valor" style={{ fontWeight: 600 }}>R$ {(s.valor || 0).toFixed(2)}</td>
+                  <td data-label="">
                     <button onClick={() => setServicos(servicos.filter((_, i) => i !== idx))} className="btn btn-outline" style={{ padding: '6px', color: 'var(--danger)', borderColor: 'var(--danger)' }}>
                       <Trash2 size={16}/>
                     </button>

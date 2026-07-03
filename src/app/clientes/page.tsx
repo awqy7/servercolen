@@ -30,15 +30,15 @@ export default async function ClientesPage() {
               <tbody>
                 {clientes.length > 0 ? clientes.map((c) => (
                   <tr key={c.id}>
-                    <td style={{ fontWeight: 600 }}>{c.nome}</td>
-                    <td>{c.telefone || '-'}</td>
-                    <td>
+                    <td data-label="Nome" style={{ fontWeight: 600 }}>{c.nome}</td>
+                    <td data-label="Telefone">{c.telefone || '-'}</td>
+                    <td data-label="Veículo">
                       <span className="flex-row" style={{ gap: '6px', color: 'var(--text-muted)' }}>
                         <Car size={16} /> {c.modelo || '-'}
                       </span>
                     </td>
-                    <td><span className="badge badge-primary" style={{ letterSpacing: '1px' }}>{c.placa || '-'}</span></td>
-                    <td>
+                    <td data-label="Placa"><span className="badge badge-primary" style={{ letterSpacing: '1px' }}>{c.placa || '-'}</span></td>
+                    <td data-label="">
                       <form action={async () => {
                         'use server';
                         await deleteCliente(c.id);

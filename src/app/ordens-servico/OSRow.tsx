@@ -23,24 +23,24 @@ export default function OSRow({ os, pecas, servicos, onConcluir, onDelete }: OSP
         onClick={() => setExpanded(!expanded)} 
         style={{ cursor: 'pointer', transition: 'background 0.2s', background: expanded ? 'var(--surface-hover)' : 'transparent' }}
       >
-        <td>
+        <td data-label="OS">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             {expanded ? <ChevronDown size={18} color="var(--primary)" /> : <ChevronRight size={18} color="var(--text-muted)" />}
             <strong>#{os.id.toString().padStart(5, '0')}</strong>
           </div>
         </td>
-        <td>{os.created_at ? new Date(os.created_at).toLocaleDateString('pt-BR') : '-'}</td>
-        <td style={{ fontWeight: 600 }}>{os.cliente_nome || 'Cliente Deletado'}</td>
-        <td><span className="badge badge-primary">{os.cliente_placa || '-'}</span></td>
-        <td>
+        <td data-label="Data">{os.created_at ? new Date(os.created_at).toLocaleDateString('pt-BR') : '-'}</td>
+        <td data-label="Cliente" style={{ fontWeight: 600 }}>{os.cliente_nome || 'Cliente Deletado'}</td>
+        <td data-label="Placa"><span className="badge badge-primary">{os.cliente_placa || '-'}</span></td>
+        <td data-label="Status">
           <span className={os.status === 'Concluído' ? "badge badge-success" : "badge badge-warning"}>
             {os.status}
           </span>
         </td>
-        <td style={{ fontWeight: 600, color: 'var(--success)' }}>
+        <td data-label="Valor" style={{ fontWeight: 600, color: 'var(--success)' }}>
           {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(os.valor_final || 0)}
         </td>
-        <td onClick={(e) => e.stopPropagation()}>
+        <td data-label="" onClick={(e) => e.stopPropagation()}>
           <div className="flex-row">
             {os.status !== 'Concluído' ? (
               <>
@@ -103,9 +103,9 @@ export default function OSRow({ os, pecas, servicos, onConcluir, onDelete }: OSP
                       <tbody>
                         {pecas.map((p: any) => (
                           <tr key={p.id}>
-                            <td style={{ padding: '8px 12px' }}>{p.nome}</td>
-                            <td style={{ padding: '8px 12px' }}>{p.quantidade}</td>
-                            <td style={{ padding: '8px 12px' }}>R$ {fmt(p.quantidade * p.valor_unitario)}</td>
+                            <td data-label="Item" style={{ padding: '8px 12px' }}>{p.nome}</td>
+                            <td data-label="Qtd" style={{ padding: '8px 12px' }}>{p.quantidade}</td>
+                            <td data-label="Subtotal" style={{ padding: '8px 12px' }}>R$ {fmt(p.quantidade * p.valor_unitario)}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -129,8 +129,8 @@ export default function OSRow({ os, pecas, servicos, onConcluir, onDelete }: OSP
                       <tbody>
                         {servicos.map((s: any) => (
                           <tr key={s.id}>
-                            <td style={{ padding: '8px 12px' }}>{s.descricao}</td>
-                            <td style={{ padding: '8px 12px' }}>R$ {fmt(s.valor)}</td>
+                            <td data-label="Serviço" style={{ padding: '8px 12px' }}>{s.descricao}</td>
+                            <td data-label="Valor" style={{ padding: '8px 12px' }}>R$ {fmt(s.valor)}</td>
                           </tr>
                         ))}
                       </tbody>

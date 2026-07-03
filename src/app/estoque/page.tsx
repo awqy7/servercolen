@@ -53,22 +53,22 @@ export default async function EstoquePage() {
               <tbody>
                 {pecas.length > 0 ? pecas.map((p: any) => (
                   <tr key={p.id}>
-                    <td>#{p.id.toString().padStart(4, '0')}</td>
-                    <td style={{ fontWeight: 500 }}>{p.nome}</td>
-                    <td>
+                    <td data-label="Cod">#{p.id.toString().padStart(4, '0')}</td>
+                    <td data-label="Produto" style={{ fontWeight: 500 }}>{p.nome}</td>
+                    <td data-label="Qtd">
                       {p.quantidade < 5 ? (
                         <span className="badge badge-warning">{p.quantidade} un</span>
                       ) : (
                         <span className="badge badge-success">{p.quantidade} un</span>
                       )}
                     </td>
-                    <td style={{ color: 'var(--text-muted)' }}>
+                    <td data-label="Custo" style={{ color: 'var(--text-muted)' }}>
                       {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(p.valor_custo)}
                     </td>
-                    <td style={{ color: 'var(--primary)', fontWeight: 600 }}>
+                    <td data-label="Venda" style={{ color: 'var(--primary)', fontWeight: 600 }}>
                       {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(p.valor_venda)}
                     </td>
-                    <td>
+                    <td data-label="">
                       <div className="flex-row">
                         <form action={async () => {
                           'use server';
