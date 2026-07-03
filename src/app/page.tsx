@@ -1,6 +1,7 @@
 import { getDashboardStats } from './actions';
 import { Wrench, DollarSign, WalletCards, AlertTriangle, Users, CheckCircle, TrendingUp, TrendingDown, ArrowRight, Clock } from 'lucide-react';
 import Link from 'next/link';
+import OwnerDashboard from './components/OwnerDashboard';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,7 +13,8 @@ export default async function Dashboard() {
   const maxFaturamento = Math.max(...stats.faturamentoMensal.map(m => m.valor), 1);
 
   return (
-    <div>
+    <>
+    <div className="desktop-only">
       <div className="page-header">
         <h1 className="page-title">Dashboard Geral</h1>
       </div>
@@ -134,45 +136,40 @@ export default async function Dashboard() {
 
       {/* Últimas Atividades */}
       <div className="card" style={{ marginBottom: '32px' }}>
-        <h2 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Clock size={18} color="var(--primary)" />
-          Últimas Atividades
-        </h2>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+          <h2 style={{ fontSize: '1.1rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Clock size={18} color="var(--primary)" />
+            Últimas Atividades
+          </h2>
+          <Link href="/ordens-servico" style={{ fontSize: '0.8rem', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: 4 }}>
+            Ver todas <ArrowRight size={14} />
+          </Link>
+        </div>
         {stats.ultimasAtividades.length > 0 ? (
-          <div className="table-container">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>OS</th>
-                  <th>Data</th>
-                  <th>Cliente</th>
-                  <th>Status</th>
-                  <th>Valor</th>
-                </tr>
-              </thead>
-              <tbody>
-                {stats.ultimasAtividades.map((os: any) => (
-                  <tr key={os.id}>
-                    <td data-label="OS"><span className="badge badge-primary">#{os.id.toString().padStart(5, '0')}</span></td>
-                    <td data-label="Data" style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                      {os.data ? new Date(os.data).toLocaleDateString('pt-BR') : '-'}
-                    </td>
-                    <td data-label="Cliente" style={{ fontWeight: 500 }}>{os.cliente || '—'}</td>
-                    <td data-label="Status">
-                      <span className={os.status === 'Concluído' ? 'badge badge-success' : 'badge badge-warning'}>
-                        {os.status}
-                      </span>
-                    </td>
-                    <td data-label="Valor" style={{ fontWeight: 600 }}>{fmt(os.valor || 0)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="activity-feed">
+            {stats.ultimasAtividades.map((os: any) => (
+              <div key={os.id} className={`activity-item ${os.status === 'Concluído' ? 'done' : 'pending'}`}>
+                <div className="activity-left">
+                  <div className="activity-os-badge">#{os.id.toString().padStart(5, '0')}</div>
+                  <div className="activity-info">
+                    <span className="activity-client">{os.cliente || '—'}</span>
+                    <span className="activity-date">{os.data ? new Date(os.data).toLocaleDateString('pt-BR') : '-'}</span>
+                  </div>
+                </div>
+                <div className="activity-right">
+                  <div className={`activity-status ${os.status === 'Concluído' ? 'status-done' : 'status-pending'}`}>
+                    <span className="status-dot" />
+                    {os.status}
+                  </div>
+                  <span className="activity-value">{fmt(os.valor || 0)}</span>
+                </div>
+              </div>
+            ))}
           </div>
         ) : (
-          <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '24px' }}>
+          <div style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '32px 16px', fontStyle: 'italic' }}>
             Nenhuma ordem de serviço registrada ainda.
-          </p>
+          </div>
         )}
       </div>
 
@@ -212,5 +209,25 @@ export default async function Dashboard() {
         )}
       </div>
     </div>
+
+    <div className="mobile-only">
+      <OwnerDashboard
+        faturamentoHoje={stats.faturamentoHoje}
+        faturamentoSemana={stats.faturamentoSemana}
+        saldoCaixa={stats.saldoCaixa}
+        osAtivas={stats.osAtivas}
+        osConcluidasMes={stats.osConcluidasMes}
+        osPorStatus={stats.osPorStatus}
+        faturamentoSemanal={stats.faturamentoSemanal}
+        faturamento={stats.faturamento}
+        alertasEstoque={stats.alertasEstoque}
+        ultimasAtividades={stats.ultimasAtividades}
+        totalClientes={stats.totalClientes}
+        clientesNovosMes={stats.clientesNovosMes}
+        entradasMes={stats.entradasMes}
+        saidasMes={stats.saidasMes}
+      />
+    </div>
+  </>
   );
 }

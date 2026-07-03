@@ -6,6 +6,60 @@ import { redirect } from 'next/navigation';
 export async function getDashboardStats() {
   const supabase = await createClient();
 
+  const now = new Date();
+  const startOfDay = new Date(now); startOfDay.setHours(0, 0, 0, 0);
+  const startOfWeek = new Date(now); startOfWeek.setDate(now.getDate() - now.getDay()); startOfWeek.setHours(0, 0, 0, 0);
+  const firstDayOfMonth = new Date(); firstDayOfMonth.setDate(1); firstDayOfMonth.setHours(0, 0, 0, 0);
+
+  // 0. Faturamento Hoje e Semana
+  const { data: osHoje } = await supabase
+    .from('ordens_servico')
+    .select('valor_final')
+    .eq('status', 'Concluído')
+    .gte('created_at', startOfDay.toISOString());
+  const faturamentoHoje = osHoje?.reduce((acc, os) => acc + (os.valor_final || 0), 0) || 0;
+
+  const { data: osSemana } = await supabase
+    .from('ordens_servico')
+    .select('valor_final')
+    .eq('status', 'Concluído')
+    .gte('created_at', startOfWeek.toISOString());
+  const faturamentoSemana = osSemana?.reduce((acc, os) => acc + (os.valor_final || 0), 0) || 0;
+
+  // 0a. OS por status
+  const { data: osTodos } = await supabase.from('ordens_servico').select('status');
+  const osPorStatus = {
+    concluidas: osTodos?.filter(o => o.status === 'Concluído').length || 0,
+    andamento: osTodos?.filter(o => o.status === 'Em Andamento').length || 0,
+    abertas: osTodos?.filter(o => o.status === 'Aberta' || o.status === 'Pendente').length || 0,
+  };
+
+  // 0b. Faturamento últimos 7 dias (pra sparkline)
+  const faturamentoSemanal: { label: string; valor: number }[] = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(now);
+    d.setDate(d.getDate() - i);
+    d.setHours(0, 0, 0, 0);
+    const dEnd = new Date(d); dEnd.setDate(dEnd.getDate() + 1);
+    const { data: diaData } = await supabase
+      .from('ordens_servico')
+      .select('valor_final')
+      .eq('status', 'Concluído')
+      .gte('created_at', d.toISOString())
+      .lt('created_at', dEnd.toISOString());
+    const total = diaData?.reduce((acc, os) => acc + (os.valor_final || 0), 0) || 0;
+    faturamentoSemanal.push({
+      label: d.toLocaleDateString('pt-BR', { weekday: 'short' }),
+      valor: total,
+    });
+  }
+
+  // 0c. Clientes novos no mês
+  const { count: clientesNovosMes } = await supabase
+    .from('clientes')
+    .select('*', { count: 'exact', head: true })
+    .gte('created_at', firstDayOfMonth.toISOString());
+
   // 1. OS em Andamento
   const { count: osAtivas } = await supabase
     .from('ordens_servico')
@@ -13,9 +67,6 @@ export async function getDashboardStats() {
     .eq('status', 'Em Andamento');
 
   // 2. OS Concluídas no mês
-  const firstDayOfMonth = new Date();
-  firstDayOfMonth.setDate(1);
-  firstDayOfMonth.setHours(0, 0, 0, 0);
 
   const { count: osConcluidasMes } = await supabase
     .from('ordens_servico')
@@ -116,7 +167,12 @@ export async function getDashboardStats() {
     alertasEstoque: alertasEstoque || [],
     totalClientes: totalClientes || 0,
     ultimasAtividades,
-    faturamentoMensal: meses
+    faturamentoMensal: meses,
+    faturamentoHoje,
+    faturamentoSemana,
+    osPorStatus,
+    faturamentoSemanal,
+    clientesNovosMes: clientesNovosMes || 0,
   };
 }
 
