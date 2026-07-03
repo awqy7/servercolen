@@ -6,6 +6,7 @@ import { addClienteDirect } from '@/app/clientes/actions';
 import { addPecaDirect } from '@/app/estoque/actions';
 import { useRouter } from 'next/navigation';
 import { Plus, Trash2, CheckCircle, UserCircle, UserPlus, X, Box, PackagePlus } from 'lucide-react';
+import { useToast } from '@/app/components/Toast';
 
 export default function NovaOSForm({ clientes, estoque }: { clientes: any[], estoque: any[] }) {
   const router = useRouter();
@@ -42,6 +43,7 @@ export default function NovaOSForm({ clientes, estoque }: { clientes: any[], est
 
   const [lancarCaixa, setLancarCaixa] = useState(false);
   const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
 
   // Totals
   const valorPecas = pecasUsadas.reduce((acc, p) => acc + (p.quantidade * p.valor_venda), 0);
@@ -53,14 +55,14 @@ export default function NovaOSForm({ clientes, estoque }: { clientes: any[], est
       if (!pecaSelecionada) return;
       const pecaDb = localEstoque.find(e => e.id.toString() === pecaSelecionada);
       if (!pecaDb || qtdPecaSelecionada <= 0 || qtdPecaSelecionada > pecaDb.quantidade) {
-        alert("Quantidade inválida ou maior que o estoque disponível.");
+        toast('error', "Quantidade inválida ou maior que o estoque disponível.");
         return;
       }
       
       const exists = pecasUsadas.find(p => p.id === pecaDb.id);
       if (exists) {
         if (exists.quantidade + qtdPecaSelecionada > pecaDb.quantidade) {
-          alert("A soma da quantidade já adicionada excede o estoque disponível.");
+          toast('error', "A soma da quantidade já adicionada excede o estoque disponível.");
           return;
         }
         setPecasUsadas(pecasUsadas.map(p => p.id === pecaDb.id ? { ...p, quantidade: p.quantidade + qtdPecaSelecionada } : p));
@@ -78,7 +80,7 @@ export default function NovaOSForm({ clientes, estoque }: { clientes: any[], est
     } else {
       // New Product Mode
       if (!newPecaNome || newPecaValorVenda <= 0) {
-        alert("Preencha o nome e o valor de venda do produto.");
+        toast('error', "Preencha o nome e o valor de venda do produto.");
         return;
       }
 
@@ -106,7 +108,7 @@ export default function NovaOSForm({ clientes, estoque }: { clientes: any[], est
         setNewPecaValorVenda(0);
         setProductMode('existing');
       } else {
-        alert("Erro ao cadastrar novo produto.");
+        toast('error', "Erro ao cadastrar novo produto.");
       }
     }
   };
@@ -126,7 +128,7 @@ export default function NovaOSForm({ clientes, estoque }: { clientes: any[], est
       // Se estiver criando novo cliente, cria ele primeiro
       if (clientMode === 'new') {
         if (!newClienteNome) {
-          alert('O nome do cliente é obrigatório!');
+          toast('error', 'O nome do cliente é obrigatório!');
           setLoading(false);
           return;
         }
@@ -139,13 +141,13 @@ export default function NovaOSForm({ clientes, estoque }: { clientes: any[], est
       }
 
       if (!finalClienteId) {
-        alert('Selecione um cliente ou preencha os dados do novo cliente!');
+        toast('error', 'Selecione um cliente ou preencha os dados do novo cliente!');
         setLoading(false);
         return;
       }
 
       if (pecasUsadas.length === 0 && servicos.length === 0) {
-        alert('Adicione pelo menos uma peça ou serviço.');
+        toast('error', 'Adicione pelo menos uma peça ou serviço.');
         setLoading(false);
         return;
       }
@@ -158,14 +160,15 @@ export default function NovaOSForm({ clientes, estoque }: { clientes: any[], est
       });
 
       if (result.success) {
+        toast('success', 'Ordem de Serviço criada com sucesso!');
         router.push('/ordens-servico');
       } else {
-        alert(result.error || 'Erro ao processar solicitação.');
+        toast('error', result.error || 'Erro ao processar solicitação.');
         setLoading(false);
       }
     } catch (e) {
       console.error(e);
-      alert('Erro ao processar solicitação. Verifique os dados.');
+      toast('error', 'Erro ao processar solicitação. Verifique os dados.');
       setLoading(false);
     }
   };
@@ -286,7 +289,7 @@ export default function NovaOSForm({ clientes, estoque }: { clientes: any[], est
                   <option value="">-- Estoque --</option>
                   {localEstoque.map(e => (
                     <option key={e.id} value={e.id} disabled={e.quantidade === 0}>
-                      {e.nome} (Qtd: {e.quantidade}) - R$ {e.valor_venda.toFixed(2)}
+                      {e.nome} (Qtd: {e.quantidade}) - R$ {(e.valor_venda || 0).toFixed(2)}
                     </option>
                   ))}
                 </select>
@@ -341,8 +344,8 @@ export default function NovaOSForm({ clientes, estoque }: { clientes: any[], est
                   <tr key={idx}>
                     <td>{p.nome}</td>
                     <td>{p.quantidade}</td>
-                    <td>R$ {p.valor_venda.toFixed(2)}</td>
-                    <td style={{ fontWeight: 600 }}>R$ {(p.quantidade * p.valor_venda).toFixed(2)}</td>
+                    <td>R$ {(p.valor_venda || 0).toFixed(2)}</td>
+                    <td style={{ fontWeight: 600 }}>R$ {((p.quantidade || 0) * (p.valor_venda || 0)).toFixed(2)}</td>
                     <td>
                       <button onClick={() => setPecasUsadas(pecasUsadas.filter((_, i) => i !== idx))} className="btn btn-outline" style={{ padding: '4px', borderColor: 'var(--danger)', color: 'var(--danger)' }}>
                         <Trash2 size={16}/>
@@ -384,7 +387,7 @@ export default function NovaOSForm({ clientes, estoque }: { clientes: any[], est
                 {servicos.map((s, idx) => (
                   <tr key={idx}>
                     <td>{s.descricao}</td>
-                    <td style={{ fontWeight: 600 }}>R$ {s.valor.toFixed(2)}</td>
+                    <td style={{ fontWeight: 600 }}>R$ {(s.valor || 0).toFixed(2)}</td>
                     <td>
                       <button onClick={() => setServicos(servicos.filter((_, i) => i !== idx))} className="btn btn-outline" style={{ padding: '4px', borderColor: 'var(--danger)', color: 'var(--danger)' }}>
                         <Trash2 size={16}/>

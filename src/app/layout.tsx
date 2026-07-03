@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Wrench, LayoutDashboard, Package, FileText, WalletCards, Users, BarChart2, LogOut } from 'lucide-react';
 import { createClient } from '@/utils/supabase/server';
 import { signOut } from './actions';
+import { ToastProvider } from './components/Toast';
 
 export const metadata: Metadata = {
   title: 'AutoRepair Pro - Gestão de Oficina',
@@ -68,12 +69,14 @@ export default async function RootLayout({
   return (
     <html lang="pt-BR">
       <body>
+        <ToastProvider>
         <div className="app-layout">
           {user && <Sidebar />}
           <main className={user ? "main-content" : "auth-content"}>
             {children}
           </main>
         </div>
+        </ToastProvider>
       </body>
     </html>
   );

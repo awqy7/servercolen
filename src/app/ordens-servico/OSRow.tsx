@@ -1,8 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronDown, ChevronRight, Plus, Trash2, Printer, CheckCircle } from 'lucide-react';
+import { ChevronDown, ChevronRight, Trash2, Printer, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
+
+const fmt = (v: number | null | undefined) => v != null ? v.toFixed(2) : '0.00';
 
 type OSProps = {
   os: any;
@@ -27,7 +29,7 @@ export default function OSRow({ os, pecas, servicos, onConcluir, onDelete }: OSP
             <strong>#{os.id.toString().padStart(5, '0')}</strong>
           </div>
         </td>
-        <td>{new Date(os.data_entrada).toLocaleDateString('pt-BR')}</td>
+        <td>{os.created_at ? new Date(os.created_at).toLocaleDateString('pt-BR') : '-'}</td>
         <td style={{ fontWeight: 600 }}>{os.cliente_nome || 'Cliente Deletado'}</td>
         <td><span className="badge badge-primary">{os.cliente_placa || '-'}</span></td>
         <td>
@@ -36,7 +38,7 @@ export default function OSRow({ os, pecas, servicos, onConcluir, onDelete }: OSP
           </span>
         </td>
         <td style={{ fontWeight: 600, color: 'var(--success)' }}>
-          {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(os.valor_final)}
+          {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(os.valor_final || 0)}
         </td>
         <td onClick={(e) => e.stopPropagation()}>
           <div className="flex-row">
@@ -103,7 +105,7 @@ export default function OSRow({ os, pecas, servicos, onConcluir, onDelete }: OSP
                           <tr key={p.id}>
                             <td style={{ padding: '8px 12px' }}>{p.nome}</td>
                             <td style={{ padding: '8px 12px' }}>{p.quantidade}</td>
-                            <td style={{ padding: '8px 12px' }}>R$ {(p.quantidade * p.valor_unitario).toFixed(2)}</td>
+                            <td style={{ padding: '8px 12px' }}>R$ {fmt(p.quantidade * p.valor_unitario)}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -128,7 +130,7 @@ export default function OSRow({ os, pecas, servicos, onConcluir, onDelete }: OSP
                         {servicos.map((s: any) => (
                           <tr key={s.id}>
                             <td style={{ padding: '8px 12px' }}>{s.descricao}</td>
-                            <td style={{ padding: '8px 12px' }}>R$ {s.valor.toFixed(2)}</td>
+                            <td style={{ padding: '8px 12px' }}>R$ {fmt(s.valor)}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -141,9 +143,9 @@ export default function OSRow({ os, pecas, servicos, onConcluir, onDelete }: OSP
               </div>
               
               <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: '24px' }}>
-                <span style={{ fontSize: '0.9rem' }}>Total Peças: <strong>R$ {os.valor_pecas.toFixed(2)}</strong></span>
-                <span style={{ fontSize: '0.9rem' }}>Total Serviços: <strong>R$ {os.valor_maodeobra.toFixed(2)}</strong></span>
-                <span style={{ fontSize: '1rem', color: 'var(--primary)' }}>Valor Final: <strong>R$ {os.valor_final.toFixed(2)}</strong></span>
+                <span style={{ fontSize: '0.9rem' }}>Total Peças: <strong>R$ {fmt(os.valor_pecas)}</strong></span>
+                <span style={{ fontSize: '0.9rem' }}>Total Serviços: <strong>R$ {fmt(os.valor_maodeobra)}</strong></span>
+                <span style={{ fontSize: '1rem', color: 'var(--primary)' }}>Valor Final: <strong>R$ {fmt(os.valor_final)}</strong></span>
               </div>
             </div>
           </td>

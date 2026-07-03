@@ -72,7 +72,8 @@ export default async function EstoquePage() {
                       <div className="flex-row">
                         <form action={async () => {
                           'use server';
-                          await addQuantidade(p.id, p.quantidade, 1);
+                          await addQuantidade(p.id, 1);
+                          revalidatePath('/estoque');
                         }}>
                           <button type="submit" className="btn btn-outline" title="Adicionar +1 Unidade" style={{ padding: '4px', border: 'none', background: 'var(--surface-hover)' }}>
                             <ArrowUp size={16} color="var(--success)" />

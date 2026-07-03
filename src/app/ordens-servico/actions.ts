@@ -240,29 +240,34 @@ export async function updateOrdem(id: number, data: {
 }) {
   const supabase = await createClient();
 
-  // 1. Estornar estoque atual
+  // 1. Salvar estado antigo para rollback
   const { data: itensAntigos } = await supabase
     .from('os_itens')
     .select('estoque_id, quantidade')
     .eq('os_id', id);
 
-  if (itensAntigos) {
-    for (const item of itensAntigos) {
-      const { data: stock } = await supabase.from('estoque').select('quantidade').eq('id', item.estoque_id).single();
-      await supabase.from('estoque').update({ quantidade: (stock?.quantidade || 0) + item.quantidade }).eq('id', item.estoque_id);
-    }
+  const itensAntigosSeguro = itensAntigos || [];
+
+  // 2. Estornar estoque atual
+  for (const item of itensAntigosSeguro) {
+    const { data: stock, error: stockError } = await supabase.from('estoque').select('quantidade').eq('id', item.estoque_id).single();
+    if (stockError) throw new Error(`Erro ao consultar estoque: ${stockError.message}`);
+    const { error: updateError } = await supabase.from('estoque').update({ quantidade: (stock?.quantidade || 0) + item.quantidade }).eq('id', item.estoque_id);
+    if (updateError) throw new Error(`Erro ao restaurar estoque: ${updateError.message}`);
   }
 
-  // 2. Deletar itens e serviços antigos
-  await supabase.from('os_itens').delete().eq('os_id', id);
-  await supabase.from('os_maodeobra').delete().eq('os_id', id);
+  // 3. Deletar itens e serviços antigos
+  const { error: delItensError } = await supabase.from('os_itens').delete().eq('os_id', id);
+  if (delItensError) throw new Error(`Erro ao remover itens antigos: ${delItensError.message}`);
+  const { error: delSvcError } = await supabase.from('os_maodeobra').delete().eq('os_id', id);
+  if (delSvcError) throw new Error(`Erro ao remover serviços antigos: ${delSvcError.message}`);
 
-  // 3. Recalcular e Atualizar OS
+  // 4. Recalcular e Atualizar OS
   const valor_pecas = data.pecas.reduce((acc, p) => acc + (p.quantidade * p.valor_venda), 0);
   const valor_maodeobra = data.servicos.reduce((acc, s) => acc + s.valor, 0);
   const valor_final = valor_pecas + valor_maodeobra;
 
-  await supabase
+  const { error: updateOsError } = await supabase
     .from('ordens_servico')
     .update({
       cliente_id: data.cliente_id,
@@ -271,19 +276,20 @@ export async function updateOrdem(id: number, data: {
       valor_final
     })
     .eq('id', id);
+  if (updateOsError) throw new Error(`Erro ao atualizar OS: ${updateOsError.message}`);
 
-  // 4. Inserir novos e atualizar estoque
+  // 5. Inserir novos itens e atualizar estoque
   if (data.pecas.length > 0) {
     for (const p of data.pecas) {
       if (p.quantidade <= 0) continue;
       const { error: itemError } = await supabase.from('os_itens').insert([{ os_id: id, estoque_id: p.id, quantidade: p.quantidade, valor_unitario: p.valor_venda }]);
-      if (itemError) throw itemError;
+      if (itemError) throw new Error(`Erro ao inserir item: ${itemError.message}`);
       
       const { data: stock, error: stockError } = await supabase.from('estoque').select('quantidade').eq('id', p.id).single();
-      if (stockError) throw stockError;
+      if (stockError) throw new Error(`Erro ao consultar estoque: ${stockError.message}`);
       
       const { error: updateError } = await supabase.from('estoque').update({ quantidade: Math.max(0, (stock?.quantidade || 0) - p.quantidade) }).eq('id', p.id);
-      if (updateError) throw updateError;
+      if (updateError) throw new Error(`Erro ao debitar estoque: ${updateError.message}`);
     }
   }
 
@@ -293,7 +299,7 @@ export async function updateOrdem(id: number, data: {
       .map(s => ({ os_id: id, descricao: s.descricao, valor: s.valor }));
     if (servicosToInsert.length > 0) {
       const { error: svcError } = await supabase.from('os_maodeobra').insert(servicosToInsert);
-      if (svcError) throw svcError;
+      if (svcError) throw new Error(`Erro ao inserir serviços: ${svcError.message}`);
     }
   }
 

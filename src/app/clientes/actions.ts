@@ -72,11 +72,24 @@ export async function addClienteDirect(nome: string, telefone: string, placa: st
 
 export async function deleteCliente(id: number) {
   const supabase = await createClient();
-  await supabase
+
+  const { data: refs } = await supabase
+    .from('ordens_servico')
+    .select('id')
+    .eq('cliente_id', id)
+    .limit(1);
+
+  if (refs && refs.length > 0) {
+    throw new Error('Este cliente possui Ordens de Serviço vinculadas. Exclua as OS primeiro.');
+  }
+
+  const { error } = await supabase
     .from('clientes')
     .delete()
     .eq('id', id);
-    
+
+  if (error) throw new Error(error.message);
+
   revalidatePath('/clientes');
   revalidatePath('/ordens-servico/nova');
   revalidatePath('/ordens-servico');

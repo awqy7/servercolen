@@ -35,7 +35,7 @@ export async function addPeca(formData: FormData) {
 
     revalidatePath('/estoque');
     revalidatePath('/ordens-servico/nova');
-    revalidatePath('/'); // update dashboard alerts
+    revalidatePath('/');
     return { success: true };
   } catch (error: any) {
     console.error('Exception in addPeca:', error);
@@ -45,27 +45,50 @@ export async function addPeca(formData: FormData) {
 
 export async function deletePeca(id: number) {
   const supabase = await createClient();
-  await supabase
+
+  const { data: refs } = await supabase
+    .from('os_itens')
+    .select('os_id')
+    .eq('estoque_id', id)
+    .limit(1);
+
+  if (refs && refs.length > 0) {
+    throw new Error('Esta peça está vinculada a uma Ordem de Serviço e não pode ser excluída.');
+  }
+
+  const { error } = await supabase
     .from('estoque')
     .delete()
     .eq('id', id);
-    
+
+  if (error) throw new Error(error.message);
+
   revalidatePath('/estoque');
   revalidatePath('/ordens-servico/nova');
   revalidatePath('/');
 }
 
-export async function addQuantidade(id: number, atual: number, adicionar: number) {
+export async function addQuantidade(id: number, adicionar: number) {
   const supabase = await createClient();
+
+  const { data: current } = await supabase
+    .from('estoque')
+    .select('quantidade')
+    .eq('id', id)
+    .single();
+
+  const novaQtd = (current?.quantidade || 0) + adicionar;
+
   await supabase
     .from('estoque')
-    .update({ quantidade: atual + adicionar })
+    .update({ quantidade: novaQtd })
     .eq('id', id);
-    
+
   revalidatePath('/estoque');
   revalidatePath('/ordens-servico/nova');
   revalidatePath('/');
 }
+
 export async function addPecaDirect(nome: string, quantidade: number, valor_custo: number, valor_venda: number) {
   if (!nome || isNaN(quantidade) || isNaN(valor_custo) || isNaN(valor_venda)) return null;
 

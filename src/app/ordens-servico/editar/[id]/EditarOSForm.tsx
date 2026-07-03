@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { updateOrdem } from '../../actions';
 import { useRouter } from 'next/navigation';
 import { Plus, Trash2, CheckCircle, ArrowLeft, Package, Wrench } from 'lucide-react';
+import { useToast } from '@/app/components/Toast';
 
 export default function EditarOSForm({ 
   os, 
@@ -51,6 +52,7 @@ export default function EditarOSForm({
   const [valorServico, setValorServico] = useState(0);
 
   const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
 
   const valorPecasTotal = pecasUsadas.reduce((acc, p) => acc + (p.quantidade * p.valor_venda), 0);
   const valorMaoDeObraTotal = servicos.reduce((acc, s) => acc + s.valor, 0);
@@ -65,7 +67,7 @@ export default function EditarOSForm({
     const jaAdicionado = pecasUsadas.find(p => p.id === pecaDb.id)?.quantidade || 0;
 
     if (jaAdicionado + qtdPecaSelecionada > totalDisponivel) {
-      alert(`Quantidade insuficiente! Você só tem ${totalDisponivel} unidades no total para este item.`);
+      toast('error', `Quantidade insuficiente! Você só tem ${totalDisponivel} unidades no total para este item.`);
       return;
     }
     
@@ -99,11 +101,11 @@ export default function EditarOSForm({
         pecas: pecasUsadas,
         servicos
       });
+      toast('success', 'Ordem de Serviço atualizada com sucesso!');
       router.push('/ordens-servico');
-      setTimeout(() => router.refresh(), 500);
     } catch (e) {
       console.error(e);
-      alert('Erro ao atualizar OS.');
+      toast('error', 'Erro ao atualizar OS.');
       setLoading(false);
     }
   };
@@ -167,8 +169,8 @@ export default function EditarOSForm({
                 <tr key={idx}>
                   <td>{p.nome}</td>
                   <td><strong>{p.quantidade}</strong></td>
-                  <td>R$ {p.valor_venda.toFixed(2)}</td>
-                  <td style={{ fontWeight: 600 }}>R$ {(p.quantidade * p.valor_venda).toFixed(2)}</td>
+                  <td>R$ {(p.valor_venda || 0).toFixed(2)}</td>
+                  <td style={{ fontWeight: 600 }}>R$ {((p.quantidade || 0) * (p.valor_venda || 0)).toFixed(2)}</td>
                   <td>
                     <button onClick={() => setPecasUsadas(pecasUsadas.filter((_, i) => i !== idx))} className="btn btn-outline" style={{ padding: '6px', color: 'var(--danger)', borderColor: 'var(--danger)' }}>
                       <Trash2 size={16}/>
@@ -213,7 +215,7 @@ export default function EditarOSForm({
               {servicos.map((s, idx) => (
                 <tr key={idx}>
                   <td>{s.descricao}</td>
-                  <td style={{ fontWeight: 600 }}>R$ {s.valor.toFixed(2)}</td>
+                  <td style={{ fontWeight: 600 }}>R$ {(s.valor || 0).toFixed(2)}</td>
                   <td>
                     <button onClick={() => setServicos(servicos.filter((_, i) => i !== idx))} className="btn btn-outline" style={{ padding: '6px', color: 'var(--danger)', borderColor: 'var(--danger)' }}>
                       <Trash2 size={16}/>

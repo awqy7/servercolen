@@ -1,24 +1,31 @@
 'use client';
 
 import { useState } from 'react';
-import { FileSpreadsheet, CheckCircle, Loader } from 'lucide-react';
+import { FileSpreadsheet, CheckCircle, Loader, XCircle } from 'lucide-react';
 
 export default function ExportButton({ periodo }: { periodo: string }) {
   const [loading, setLoading] = useState(false);
-  const [savedPath, setSavedPath] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   const handleExport = async () => {
     setLoading(true);
-    setSavedPath(null);
+    setFeedback(null);
     try {
       const res = await fetch(`/api/exportar?periodo=${periodo}`);
-      if (!res.ok) throw new Error('Erro ao exportar');
+      if (res.status === 401) {
+        throw new Error('Sessão expirada. Faça login novamente.');
+      }
+      if (!res.ok) {
+        const errData = await res.json().catch(() => null);
+        throw new Error(errData?.error || 'Erro ao exportar');
+      }
 
-      const filename = res.headers.get('X-Filename') || 'relatorio.xlsx';
-      const xPath = res.headers.get('X-Saved-Path') || '';
-
-      // Trigger browser download
       const blob = await res.blob();
+
+      const cdHeader = res.headers.get('Content-Disposition') || '';
+      const filenameMatch = cdHeader.match(/filename="(.+)"/);
+      const filename = filenameMatch ? filenameMatch[1] : `relatorio_${periodo}.xlsx`;
+
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -28,9 +35,9 @@ export default function ExportButton({ periodo }: { periodo: string }) {
       a.remove();
       URL.revokeObjectURL(url);
 
-      setSavedPath(xPath || filename);
-    } catch (e) {
-      alert('Erro ao gerar planilha. Tente novamente.');
+      setFeedback({ type: 'success', message: 'Planilha baixada com sucesso!' });
+    } catch (e: any) {
+      setFeedback({ type: 'error', message: e.message || 'Erro ao gerar planilha.' });
     } finally {
       setLoading(false);
     }
@@ -45,11 +52,16 @@ export default function ExportButton({ periodo }: { periodo: string }) {
         style={{ gap: '8px', padding: '10px 20px', fontWeight: 600 }}
       >
         {loading ? <Loader size={18} style={{ animation: 'spin 1s linear infinite' }} /> : <FileSpreadsheet size={18} />}
-        {loading ? 'Gerando...' : '📊 Exportar Planilha Excel'}
+        {loading ? 'Gerando...' : 'Exportar Planilha Excel'}
       </button>
-      {savedPath && (
-        <span style={{ fontSize: '0.78rem', color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-          <CheckCircle size={12} /> Salvo também em: <em style={{ marginLeft: 2 }}>{savedPath}</em>
+      {feedback && (
+        <span style={{
+          fontSize: '0.78rem',
+          display: 'flex', alignItems: 'center', gap: '4px',
+          color: feedback.type === 'success' ? 'var(--success)' : 'var(--danger)'
+        }}>
+          {feedback.type === 'success' ? <CheckCircle size={12} /> : <XCircle size={12} />}
+          {feedback.message}
         </span>
       )}
       <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>

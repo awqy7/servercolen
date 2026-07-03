@@ -153,7 +153,7 @@ export default async function RelatorioPage({
                   <tr key={os.id}>
                     <td><span className="badge badge-primary">#{os.id}</span></td>
                     <td style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-                      {new Date(os.data_entrada).toLocaleString('pt-BR')}
+                      {os.created_at ? new Date(os.created_at).toLocaleString('pt-BR') : '-'}
                     </td>
                     <td style={{ fontWeight: 600 }}>{os.cliente_nome || '—'}</td>
                     <td>{os.modelo || '—'} {os.placa ? <span className="badge badge-primary" style={{ marginLeft: 4 }}>{os.placa}</span> : ''}</td>

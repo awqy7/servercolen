@@ -1,10 +1,13 @@
 import { getOrdemCompleta } from '../../actions';
 import { notFound } from 'next/navigation';
-import { Printer } from 'lucide-react';
+import PrintButton from './PrintButton';
 
 export default async function NotaFiscalPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const osData = await getOrdemCompleta(parseInt(id));
+  const numId = parseInt(id);
+  if (isNaN(numId)) return notFound();
+
+  const osData = await getOrdemCompleta(numId);
   
   if (!osData) return notFound();
 
@@ -24,12 +27,8 @@ export default async function NotaFiscalPage({ params }: { params: Promise<{ id:
       `}} />
 
       <div className="flex-between no-print" style={{ marginBottom: '24px' }}>
-        {/* We use window.print() natively here instead of complex setup */}
         <h2 style={{ color: 'var(--text-muted)' }}>Visualização da Impressão</h2>
-        <button className="btn btn-primary" onClick={() => {/* Needs client side for this button so we use raw HTML onlick if possible but this is SSC so we leave to browser ctrl+p OR we add a tiny client script */}}
-          style={{ cursor: 'pointer' }}>
-          Tecle Ctrl+P para Imprimir ou Salvar em PDF
-        </button>
+        <PrintButton />
       </div>
 
       <div className="printable-area" style={{ border: '2px solid #222', padding: '32px' }}>
@@ -42,7 +41,7 @@ export default async function NotaFiscalPage({ params }: { params: Promise<{ id:
           <div style={{ textAlign: 'right' }}>
             <h2 style={{ fontSize: '20px', margin: '0 0 8px 0' }}>NOTA DE SERVIÇO / OS</h2>
             <p style={{ margin: 0, fontSize: '16px', fontWeight: 'bold' }}>Nº: {os.id.toString().padStart(6, '0')}</p>
-            <p style={{ margin: 0, fontSize: '14px' }}>Data Entrada: {new Date(os.data_entrada).toLocaleDateString('pt-BR')}</p>
+            <p style={{ margin: 0, fontSize: '14px' }}>Data Entrada: {os.created_at ? new Date(os.created_at).toLocaleDateString('pt-BR') : '-'}</p>
           </div>
         </div>
 
@@ -73,8 +72,8 @@ export default async function NotaFiscalPage({ params }: { params: Promise<{ id:
                   <tr key={i}>
                     <td style={{ padding: '8px', border: '1px solid #ccc' }}>{p.nome}</td>
                     <td style={{ padding: '8px', border: '1px solid #ccc', textAlign: 'center' }}>{p.quantidade}</td>
-                    <td style={{ padding: '8px', border: '1px solid #ccc', textAlign: 'right' }}>R$ {p.valor_unitario.toFixed(2)}</td>
-                    <td style={{ padding: '8px', border: '1px solid #ccc', textAlign: 'right' }}>R$ {(p.quantidade * p.valor_unitario).toFixed(2)}</td>
+                    <td style={{ padding: '8px', border: '1px solid #ccc', textAlign: 'right' }}>R$ {(p.valor_unitario || 0).toFixed(2)}</td>
+                    <td style={{ padding: '8px', border: '1px solid #ccc', textAlign: 'right' }}>R$ {((p.quantidade || 0) * (p.valor_unitario || 0)).toFixed(2)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -96,7 +95,7 @@ export default async function NotaFiscalPage({ params }: { params: Promise<{ id:
                 {servicos.map((s: any, i: number) => (
                   <tr key={i}>
                     <td style={{ padding: '8px', border: '1px solid #ccc' }}>{s.descricao}</td>
-                    <td style={{ padding: '8px', border: '1px solid #ccc', textAlign: 'right' }}>R$ {s.valor.toFixed(2)}</td>
+                    <td style={{ padding: '8px', border: '1px solid #ccc', textAlign: 'right' }}>R$ {(s.valor || 0).toFixed(2)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -108,15 +107,15 @@ export default async function NotaFiscalPage({ params }: { params: Promise<{ id:
           <div style={{ width: '300px', border: '2px solid #222', borderRadius: '4px', padding: '16px', backgroundColor: '#fafafa' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '14px' }}>
               <span>Subtotal Peças:</span>
-              <span>R$ {os.valor_pecas.toFixed(2)}</span>
+              <span>R$ {(os.valor_pecas || 0).toFixed(2)}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px', fontSize: '14px' }}>
               <span>Subtotal Serviços:</span>
-              <span>R$ {os.valor_maodeobra.toFixed(2)}</span>
+              <span>R$ {(os.valor_maodeobra || 0).toFixed(2)}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '2px solid #ccc', paddingTop: '8px', fontWeight: 'bold', fontSize: '18px' }}>
               <span>TOTAL FINAL:</span>
-              <span>R$ {os.valor_final.toFixed(2)}</span>
+              <span>R$ {(os.valor_final || 0).toFixed(2)}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px', fontSize: '12px', color: '#555' }}>
               <span>Status atual:</span>

@@ -9,6 +9,11 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
 
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+    }
+
     const now = new Date();
     const start = new Date(now);
     if (periodo === 'dia') start.setHours(0, 0, 0, 0);

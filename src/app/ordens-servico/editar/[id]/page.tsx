@@ -8,7 +8,10 @@ export const dynamic = 'force-dynamic';
 
 export default async function EditarOSPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const data = await getOrdemCompleta(parseInt(id));
+  const numId = parseInt(id);
+  if (isNaN(numId)) redirect('/ordens-servico');
+
+  const data = await getOrdemCompleta(numId);
   
   if (!data || data.os.status === 'Concluído') {
     redirect('/ordens-servico');
